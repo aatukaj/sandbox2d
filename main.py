@@ -1,11 +1,12 @@
 import pygame as pg
 from settings import *
 
+from world import World
+
 pg.display.init()
 pg.mixer.init()
 win = pg.display.set_mode((WIDTH, HEIGHT), pg.SCALED | pg.RESIZABLE)
 
-from world import World
 def main():
     clock = pg.Clock()
     world = World()

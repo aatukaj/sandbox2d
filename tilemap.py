@@ -32,7 +32,7 @@ class Tilemap:
         if self.is_inside(pos):
             if replace or self.get_tile(pos) is None:
                 self.tiles[pos[1]][pos[0]] = val
-                
+
     def get_tile(self, pos):
         if self.is_inside(pos):
             return self.tiles[pos[1]][pos[0]]
@@ -41,7 +41,10 @@ class Tilemap:
         for y, row in enumerate(vals, int(pos[1])):
             for x, tile in enumerate(row, int(pos[0])):
                 self.set_tile((x, y), tile, replace=replace)
-
+    
+    def get_tile_coords(self, pos):
+        tile_coords = (int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
+        return tile_coords if self.is_inside(tile_coords) else False
  
 
     def get_collisions(self, rect: pg.Rect):
@@ -66,3 +69,5 @@ class Tilemap:
 
         if rects:
             return [rects[i] for i in rect.collidelistall(rects)]
+    
+    

@@ -28,9 +28,9 @@ class Player(pg.sprite.Sprite):
         keys = pg.key.get_pressed()
         speed = 0
         if keys[pg.K_d]:
-            speed += 200
+            speed += 100
         if keys[pg.K_a]:
-            speed -= 200
+            speed -= 100
         if keys[pg.K_SPACE] and self.grounded:
             self.vel.y = -300
         self.vel.x = speed
@@ -74,3 +74,13 @@ class Player(pg.sprite.Sprite):
                 ):
                     self.vel.x = 0
                     self.rect.left = collision.right
+
+    def handle_mouse(self, t, camera, tilemap):
+        mouse = pg.mouse.get_pressed()
+        mouse_pos = pg.Vector2(pg.mouse.get_pos())
+        tile_pos = tilemap.get_tile_coords(mouse_pos + camera)
+        if tile_pos:
+            if mouse[0]:
+                tilemap.set_tile(tile_pos, None)
+            if mouse[2]:
+                tilemap.set_tile(tile_pos, t.DIRT)

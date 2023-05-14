@@ -71,16 +71,7 @@ class World:
         self.entities.update(dt, self.tilemap)
         self.handle_mouse(dt)
 
-    def get_tile_coords(self, pos):
-        tile_coords = (int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
-        return tile_coords if self.tilemap.is_inside(tile_coords) else False
 
     def handle_mouse(self, dt):
-        mouse = pg.mouse.get_pressed()
-        mouse_pos = pg.Vector2(pg.mouse.get_pos())
-        tile_pos = self.get_tile_coords(mouse_pos + self.camera)
-        if tile_pos:
-            if mouse[0]:
-                self.tilemap.set_tile(tile_pos, None)
-            if mouse[2]:
-                self.tilemap.set_tile(tile_pos, t.DIRT)
+        #move this logic into player
+        self.player.handle_mouse(t, self.camera, self.tilemap)
