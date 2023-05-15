@@ -31,11 +31,11 @@ class Tilemap:
     def set_tile(self, pos, val, replace = True):
         if self.is_inside(pos):
             if replace or self.get_tile(pos) is None:
-                self.tiles[pos[1]][pos[0]] = val
+                self.tiles[int(pos[1])][int(pos[0])] = val
 
     def get_tile(self, pos):
         if self.is_inside(pos):
-            return self.tiles[pos[1]][pos[0]]
+            return self.tiles[int(pos[1])][int(pos[0])]
 
     def set_tiles(self, pos, vals, replace = True):
         for y, row in enumerate(vals, int(pos[1])):
@@ -43,7 +43,7 @@ class Tilemap:
                 self.set_tile((x, y), tile, replace=replace)
     
     def get_tile_coords(self, pos):
-        tile_coords = (int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
+        tile_coords = pos//TILE_SIZE
         return tile_coords if self.is_inside(tile_coords) else False
  
 

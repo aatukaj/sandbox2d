@@ -1,3 +1,15 @@
+import pygame as pg
+
+
 TILE_SIZE = 16
 WIDTH = 480
 HEIGHT = 270
+FLAGS = pg.SCALED | pg.RESIZABLE
+
+
+"""
+TILE_SIZE = 32
+WIDTH = 1000
+HEIGHT = 800
+FLAGS = 0
+"""
