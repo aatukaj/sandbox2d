@@ -16,13 +16,13 @@ class Tilemap:
         x_end = min(self.width - 1, int((-camera.x + WIDTH) / TILE_SIZE + 1))
 
         # love list comprehension
-        surf.blits(
-            (
+        surf.fblits(
+            [
                 (tile.img, (x * TILE_SIZE + camera.x, y * TILE_SIZE + camera.y))
                 for y, row in enumerate(self.tiles[y_start:y_end], y_start)
                 for x, tile in enumerate(row[x_start:x_end], x_start)
                 if (tile is not None)
-            )
+            ]
         )
 
     def is_inside(self, pos):

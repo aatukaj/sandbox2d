@@ -1,5 +1,8 @@
 import enum
 import pygame as pg
+import pygame.freetype as ft
+pg.init()
+
 from settings import *
 
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
@@ -16,7 +19,11 @@ def main():
     state = State.GAME
     clock = pg.Clock()
     world = World()
-    inventory = Inventory(9, 4)
+    font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
+    inventory = Inventory(9, 4, font)
+
+
+
     while True:
         dt = clock.tick() / 1000
         if state == State.GAME:
@@ -32,6 +39,8 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_ESCAPE:
                     state = State.INVENTORY if state == State.GAME else State.GAME
+            if state == State.INVENTORY:
+                inventory.handle_event(event)
 
 
 if __name__ == "__main__":
