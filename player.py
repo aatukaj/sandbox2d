@@ -18,6 +18,8 @@ class Player(pg.sprite.Sprite):
         self.selected_tile = None
         self.break_timer = 0
 
+        self.equipped_item = None
+
     def update(self, dt: float, tile_group: Tilemap) -> None:
         self.old_rect = self.rect.copy()
         self.handle_input()

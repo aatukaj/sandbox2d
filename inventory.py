@@ -16,7 +16,7 @@ class Inventory:
     def __init__(self, width, height, font: ft.Font):
         self.width = width
         self.height = height
-        self.items = [ItemStack(t.DIRT, 64) for _ in range(width * height)]
+        self.items = [ItemStack(t.DIRT, i) for i in range(width * height)]
 
         self.cell_margin = 4
         self.cell_padding = 2
@@ -44,23 +44,36 @@ class Inventory:
 
         return item_rects
 
-    def handle_event(self, event: pg.Event):
+    def handle_event(self, event: pg.Event, grabbed_item):
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == 1:
                 if self.rect.collidepoint(*event.pos):
-
                     #translate the event pos
                     rect = pg.Rect(event.pos, (1, 1)).move(-self.rect.x, -self.rect.y)
                     collision = rect.collidelist(self.item_rects)
+
+                    #collision is -1 when there aren't any collisions
                     if collision != -1:
-                        self.items[collision].item = None
+                        itemstack =  self.items[collision]
+                        if grabbed_item is None:
+                            self.items[collision] = None
+                            return itemstack
+                        else:
+                            if itemstack is None:
+                                self.items[collision] = grabbed_item
+                            else:
+                                itemstack.item_count+=grabbed_item.item_count
+                            return None
+        return grabbed_item
+
 
     def draw(self, surf: pg.Surface):
-        self.surface.fill((120, 120, 120))
+        self.surface.fill("#181425")
+        pg.draw.rect(self.surface, "#262b44", ((0,0), self.rect.size), width= 1)
         for i, rect in enumerate(self.item_rects):
-            pg.draw.rect(self.surface, (0, 0, 0), rect)
+            pg.draw.rect(self.surface, "#262b44", rect)
             item_stack = self.items[i]
-            if item_stack.item is not None:
+            if item_stack is not None:
 
                 self.surface.blit(item_stack.item.img, (rect.x+ self.cell_padding//2,  rect.y+ self.cell_padding//2))
                 self.font.render_to(self.surface, (rect.left + 1, rect.top + 1), str(item_stack.item_count), (255, 255, 255))
