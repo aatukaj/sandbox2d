@@ -1,24 +1,24 @@
 import pygame as pg
 from settings import *
 
+
 class Tilemap:
     def __init__(self, width, height):
         self.tiles = [[None for _ in range(width)] for _ in range(height)]
         self.width = width
         self.height = height
-        print(self.width, self.height)
 
     def draw(self, surf: pg.Surface, camera=pg.Vector2(0, 0)):
-        #cords for clipping
-        y_start = max(0, int(-camera.y / TILE_SIZE))
-        x_start = max(0, int(-camera.x / TILE_SIZE))
-        y_end = min(self.height - 1, int((-camera.y + HEIGHT) / TILE_SIZE + 1))
-        x_end = min(self.width - 1, int((-camera.x + WIDTH) / TILE_SIZE + 1))
+        # cords for clipping
+        y_start = max(0, int(-camera.y))
+        x_start = max(0, int(-camera.x))
+        y_end = min(self.height - 1, int((-camera.y + HEIGHT / TILE_SIZE) + 1))
+        x_end = min(self.width - 1, int((-camera.x + WIDTH / TILE_SIZE) + 1))
 
         # love list comprehension
         surf.fblits(
             [
-                (tile.img, (x * TILE_SIZE + camera.x, y * TILE_SIZE + camera.y))
+                (tile.img, ((x + camera.x) * TILE_SIZE, (y + camera.y) * TILE_SIZE))
                 for y, row in enumerate(self.tiles[y_start:y_end], y_start)
                 for x, tile in enumerate(row[x_start:x_end], x_start)
                 if (tile is not None)
@@ -27,32 +27,33 @@ class Tilemap:
 
     def is_inside(self, pos):
         return (0 <= pos[0] < self.width) and (0 <= pos[1] < self.height)
-    
-    def set_tile(self, pos, val, replace = True):
+
+    def set_tile(self, pos, val, replace=True):
         if self.is_inside(pos):
             if replace or self.get_tile(pos) is None:
                 self.tiles[int(pos[1])][int(pos[0])] = val
+                return True
+        return False
 
     def get_tile(self, pos):
         if self.is_inside(pos):
             return self.tiles[int(pos[1])][int(pos[0])]
 
-    def set_tiles(self, pos, vals, replace = True):
+    def set_tiles(self, pos, vals, replace=True):
         for y, row in enumerate(vals, int(pos[1])):
             for x, tile in enumerate(row, int(pos[0])):
                 self.set_tile((x, y), tile, replace=replace)
-    
-    def get_tile_coords(self, pos):
-        tile_coords = pos//TILE_SIZE
-        return tile_coords if self.is_inside(tile_coords) else False
- 
 
-    def get_collisions(self, rect: pg.Rect):
+    def get_tile_coords(self, pos):
+        tile_coords = pos
+        return tile_coords if self.is_inside(tile_coords) else False
+
+    def get_collisions(self, rect: pg.FRect):
         # only works when rect dimensions are <= TILE_SIZE
-        x1 = rect.left // TILE_SIZE
-        y1 = rect.top // TILE_SIZE
-        x2 = rect.right // TILE_SIZE
-        y2 = rect.bottom // TILE_SIZE
+        x1 = rect.left // 1
+        y1 = rect.top // 1
+        x2 = rect.right // 1
+        y2 = rect.bottom // 1
 
         points = [
             pg.Vector2(x1, y1),
@@ -61,13 +62,11 @@ class Tilemap:
             pg.Vector2(x2, y2),
         ]
         rects = []
+
         for point in points:
             if self.is_inside(point):
                 tile = self.tiles[int(point.y)][int(point.x)]
                 if tile is not None and tile.rect is not None:
-                    rects.append(tile.rect.move(point * TILE_SIZE))
-
+                    rects.append(tile.rect.move(point))
         if rects:
             return [rects[i] for i in rect.collidelistall(rects)]
-    
-    

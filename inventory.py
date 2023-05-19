@@ -11,9 +11,16 @@ class ItemStack:
         self.rect = 0
 
     def draw(self, font, x, y, surf):
+        if self.item is None:
+            return
         surf.blit(self.item.img, (x, y))
         if self.item_count > 1:
             font.render_to(surf, (x, y), str(self.item_count), (255, 255, 255))
+
+    def remove(self, amount):
+        self.item_count -= amount
+        if self.item_count <= 0:
+            self.item = None
 
 
 class Inventory:
@@ -39,6 +46,8 @@ class Inventory:
         self.item_rects = self.generate_rects()
         self.surface = pg.Surface(self.rect.size)
 
+  
+
     def generate_rects(self):
         item_rects = []
         for i in range(self.width * self.height):
@@ -53,26 +62,31 @@ class Inventory:
         return item_rects
 
     def handle_event(self, event: pg.Event, grabbed_item):
-        if event.type == pg.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                if self.rect.collidepoint(*event.pos):
-                    # translate the event pos
-                    rect = pg.Rect(event.pos, (1, 1)).move(-self.rect.x, -self.rect.y)
-                    collision = rect.collidelist(self.item_rects)
+        if event.type != pg.MOUSEBUTTONDOWN or event.button != 1 or not self.rect.collidepoint(*event.pos):
+            return grabbed_item
 
-                    # collision is -1 when there aren't any collisions
-                    if collision != -1:
-                        itemstack = self.items[collision]
-                        if grabbed_item is None:
-                            self.items[collision] = None
-                            return itemstack
-                        else:
-                            if itemstack is None:
-                                self.items[collision] = grabbed_item
-                            else:
-                                itemstack.item_count += grabbed_item.item_count
-                            return None
-        return grabbed_item
+
+        # translate the event pos
+        rect = pg.Rect(event.pos, (1, 1)).move(-self.rect.x, -self.rect.y)
+        collision = rect.collidelist(self.item_rects)
+
+        # collision is -1 when there aren't any collisions
+        if collision == -1:
+            return grabbed_item
+        
+        itemstack = self.items[collision]
+
+        if grabbed_item is None:
+            self.items[collision] = None
+            return itemstack
+        
+        else:
+            if itemstack is None:
+                self.items[collision] = grabbed_item
+            else:
+                itemstack.item_count += grabbed_item.item_count
+            return None
+        
 
     def draw(self, surf: pg.Surface):
         self.surface.fill("#181425")

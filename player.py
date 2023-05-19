@@ -7,18 +7,21 @@ import tiles as t
 class Player(pg.sprite.Sprite):
     def __init__(self, x, y, *groups):
         super().__init__(*groups)
-        self.image = pg.Surface((TILE_SIZE - 2, TILE_SIZE - 2))
+        self.image = pg.Surface((TILE_SIZE-4, TILE_SIZE-4))
         self.image.fill((255, 255, 255))
-        self.rect = pg.FRect(self.image.get_rect())
+        self.rect = pg.FRect(0, 0, .75, .75)
         self.rect.topleft = (x, y)
+
         self.vel = pg.Vector2(0, 0)
-        self.accel = pg.Vector2(0, 1000)
+        self.accel = pg.Vector2(0, 40)
         self.grounded = False
         self.reach = 5
         self.selected_tile = None
         self.break_timer = 0
 
-        self.equipped_item = None
+        self.equipped_stack = None
+
+        self.flying = False
 
     def update(self, dt: float, tile_group: Tilemap) -> None:
         self.old_rect = self.rect.copy()
@@ -37,21 +40,32 @@ class Player(pg.sprite.Sprite):
 
     def handle_input(self):
         keys = pg.key.get_pressed()
-        speed = 0
+        speed_x = 0
+        
         if keys[pg.K_d]:
-            speed += 80
+            speed_x += 5
         if keys[pg.K_a]:
-            speed -= 80
+            speed_x -= 5
+        
         if keys[pg.K_SPACE] and self.grounded:
-            self.vel.y = -300
-        self.vel.x = speed
+            self.vel.y = -19
+        self.vel.x = speed_x
+        
+        if self.flying:
+            speed_y = 0
+            if keys[pg.K_s]:
+                speed_y += 5
+            if keys[pg.K_w]:
+                speed_y -= 5
+            self.vel.y = speed_y
 
-    def handle_collision(self, tilemap: Tilemap, dt:float) -> None:
-        self.rect.top += self.vel.y * dt
+    def handle_collision(self, tilemap: Tilemap, dt: float) -> None:
+        self.rect.y += self.vel.y * dt
         collisions = tilemap.get_collisions(self.rect)
-
+        
         if collisions:
             for collision in collisions:
+    
                 if (
                     self.rect.bottom >= collision.top
                     and self.old_rect.bottom <= collision.top
@@ -68,7 +82,7 @@ class Player(pg.sprite.Sprite):
                     self.rect.top = collision.bottom
         else:
             self.grounded = False
-        self.rect.left += self.vel.x * dt
+        self.rect.x += self.vel.x * dt
         collisions = tilemap.get_collisions(self.rect)
         if collisions:
             for collision in collisions:
@@ -88,28 +102,31 @@ class Player(pg.sprite.Sprite):
 
     def handle_mouse(self, camera, world, dt):
         mouse = pg.mouse.get_pressed()
-        mouse_pos = pg.Vector2(pg.mouse.get_pos())
-        tile_pos = world.tilemap.get_tile_coords(mouse_pos + camera)
+        mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
+        tile_pos = world.tilemap.get_tile_coords((mouse_pos + camera) // 1)
 
-        if tile_pos and (self.pos / TILE_SIZE).distance_to(tile_pos) <= self.reach:
+        if tile_pos and (self.pos).distance_to(tile_pos) <= self.reach:
             tile = world.tilemap.get_tile(tile_pos)
             prev_tile_pos = self.selected_tile
             self.selected_tile = tile_pos
-            if mouse[0]:
-                if tile is not None:
-                    self.break_timer += dt
-                    if prev_tile_pos != tile_pos:
-                        self.break_timer = 0
-                    if self.break_timer >= tile.break_time:
-                        world.tilemap.set_tile(tile_pos, None)
-                        self.break_timer = 0
-                else:
+            if mouse[0] and tile is not None:
+                self.break_timer += dt
+                if prev_tile_pos != tile_pos:
                     self.break_timer = 0
+
+                if self.break_timer >= tile.break_time:
+                    world.tilemap.set_tile(tile_pos, None)
+                    self.break_timer = 0
+
             else:
                 self.break_timer = 0
 
             if mouse[2]:
-                if not t.DIRT.rect.move(*(tile_pos*TILE_SIZE)).colliderect(self.rect):
-                    world.tilemap.set_tile(tile_pos, t.DIRT, replace = False)
+                if self.equipped_stack and isinstance(self.equipped_stack.item, t.Tile):
+                    if not t.DIRT.rect.move(*(tile_pos)).colliderect(
+                        self.rect
+                    ):
+                        if world.tilemap.set_tile(tile_pos, t.DIRT, replace=False):
+                            self.equipped_stack.remove(1)
         else:
             self.selected_tile = None

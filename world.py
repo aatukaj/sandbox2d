@@ -15,13 +15,14 @@ breaking_sprites = [
 ]
 select_sprite = load_img("textures/select.png", transparent=True)
 
+
 class World:
     def __init__(self):
         self.entities = OffsetGroup()
         self.tilemap = Tilemap(2000, 1000)
         self.player = Player(
-            self.tilemap.width * TILE_SIZE // 2,
-            self.tilemap.height * TILE_SIZE // 2 - 160,
+            self.tilemap.width // 2,
+            self.tilemap.height // 2 - 10,
             self.entities,
         )
         self.camera = pg.Vector2()
@@ -68,13 +69,14 @@ class World:
 
     def draw(self, surf: pg.Surface):
         surf.fill("#79A6FF")
-        self.camera.xy = (
-            (pg.Vector2(self.player.rect.center)) - pg.Vector2(WIDTH, HEIGHT) // 2
-        ) // 1
+        self.camera.xy = (pg.Vector2(self.player.rect.center)) - pg.Vector2(
+            WIDTH, HEIGHT
+        ) // (2 * TILE_SIZE)
 
         self.tilemap.draw(surf, -self.camera)
         if self.player.selected_tile:
-            pos = self.player.selected_tile * TILE_SIZE - self.camera
+            pos = self.player.selected_tile - self.camera
+            surf.blit(select_sprite, (pos * TILE_SIZE, (TILE_SIZE, TILE_SIZE)))
             if self.player.break_timer > 0:
                 surf.blit(
                     breaking_sprites[
@@ -86,9 +88,9 @@ class World:
                             * 4
                         )
                     ],
-                    pos,
+                    pos * TILE_SIZE,
                 )
-            surf.blit(select_sprite, (pos, (TILE_SIZE, TILE_SIZE)))
+
         self.entities.draw(surf, -self.camera)
 
     def update(self, dt):

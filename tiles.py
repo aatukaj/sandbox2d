@@ -3,7 +3,7 @@ from tools import load_img
 import pygame as pg
 from functools import cached_property
 class Tile:
-    def __init__(self, img_path, transparent = False, rect=pg.FRect(0, 0, TILE_SIZE, TILE_SIZE), break_time = 0.5, break_level = 0):
+    def __init__(self, img_path, transparent = False, rect=pg.FRect(0, 0, 1, 1), break_time = 0.5, break_level = 0):
         self.img_path = img_path
         self.transparent = transparent
         self.rect = rect

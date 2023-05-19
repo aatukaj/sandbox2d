@@ -1,9 +1,13 @@
+import ez_profile
+
 import enum
 import pygame as pg
 import pygame.freetype as ft
 import numpy
 
-pg.init()
+
+pg.display.init()
+ft.init()
 
 from settings import *
 
@@ -31,6 +35,7 @@ def main():
     background = win.copy()
     while True:
         dt = clock.tick() / 1000
+        world.player.equipped_stack = hotbar.items[hotbar.selected_index]
         if state == State.GAME:
             world.update(dt)
 
@@ -58,16 +63,18 @@ def main():
                         state = State.INVENTORY
                         background = win.copy()
 
-                if event.unicode in "123456789":
+                if event.unicode != "" and event.unicode in "123456789":
+
                     hotbar.selected_index = int(event.unicode) - 1
 
             if event.type == pg.MOUSEWHEEL:
                 hotbar.selected_index = (
-                    hotbar.selected_index + numpy.sign(event.y)
+                    hotbar.selected_index - numpy.sign(event.y)
                 ) % 9
             if state == State.INVENTORY:
                 for ui in [inventory, hotbar]:
                     grabbed_item = ui.handle_event(event, grabbed_item)
+                    
 
 
 if __name__ == "__main__":

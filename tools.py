@@ -13,4 +13,4 @@ def load_img(path, transparent = False):
 class OffsetGroup(pg.sprite.Group):
     def draw(self, surf: pg.Surface, offset=pg.Vector2(0, 0)):
         for sprite in self.sprites():
-            surf.blit(sprite.image, sprite.rect.topleft + offset)
+            surf.blit(sprite.image, (sprite.rect.topleft + offset) * TILE_SIZE)
