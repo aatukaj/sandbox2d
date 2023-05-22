@@ -1,5 +1,3 @@
-import ez_profile
-
 import enum
 import pygame as pg
 import pygame.freetype as ft
@@ -33,8 +31,27 @@ def main():
     hotbar.rect.bottom = HEIGHT - 10
     grabbed_item = None
     background = win.copy()
+    debug_on = True
+
+    def debug_draw():
+        player = world.player
+        lines = [
+            f"fps={clock.get_fps():.2f}, {dt=}",
+            f"player.pos=[{player.pos.x:.2f}, {player.pos.y:.2f}]",
+            f"player.vel={player.vel.xy}",
+            f"player.break_time={player.break_timer:.2f}",
+            f"player.selected_tile={player.selected_tile}",
+        ]
+        bg = pg.Surface((170, 80), pg.SRCALPHA)
+        bg.fill((0, 0, 0, 125))
+        win.blit(bg, (0, 0))
+        y = 1
+        for line in lines:
+            font.render_to(win, (1, y), line, (255, 255, 255))
+            y += 10
+
     while True:
-        dt = clock.tick() / 1000
+        dt = clock.tick(144) / 1000
         world.player.equipped_stack = hotbar.items[hotbar.selected_index]
         if state == State.GAME:
             world.update(dt)
@@ -49,8 +66,9 @@ def main():
             if grabbed_item:
                 mpos = pg.Vector2(pg.mouse.get_pos())
                 grabbed_item.draw(font, *(mpos - pg.Vector2(TILE_SIZE / 2)), win)
-
-        pg.display.update()
+        if debug_on:
+            debug_draw()
+        pg.display.flip()
 
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -62,9 +80,10 @@ def main():
                     else:
                         state = State.INVENTORY
                         background = win.copy()
+                if event.key == pg.K_TAB:
+                    debug_on = not debug_on
 
                 if event.unicode != "" and event.unicode in "123456789":
-
                     hotbar.selected_index = int(event.unicode) - 1
 
             if event.type == pg.MOUSEWHEEL:
@@ -74,7 +93,6 @@ def main():
             if state == State.INVENTORY:
                 for ui in [inventory, hotbar]:
                     grabbed_item = ui.handle_event(event, grabbed_item)
-                    
 
 
 if __name__ == "__main__":

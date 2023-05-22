@@ -7,9 +7,9 @@ import tiles as t
 class Player(pg.sprite.Sprite):
     def __init__(self, x, y, *groups):
         super().__init__(*groups)
-        self.image = pg.Surface((TILE_SIZE-4, TILE_SIZE-4))
+        self.image = pg.Surface((TILE_SIZE-3, TILE_SIZE-3))
         self.image.fill((255, 255, 255))
-        self.rect = pg.FRect(0, 0, .75, .75)
+        self.rect = pg.FRect((x, y), pg.Vector2(self.image.get_rect().size) / TILE_SIZE)
         self.rect.topleft = (x, y)
 
         self.vel = pg.Vector2(0, 0)

@@ -75,8 +75,8 @@ class World:
 
         self.tilemap.draw(surf, -self.camera)
         if self.player.selected_tile:
-            pos = self.player.selected_tile - self.camera
-            surf.blit(select_sprite, (pos * TILE_SIZE, (TILE_SIZE, TILE_SIZE)))
+            pos = (self.player.selected_tile - self.camera) * TILE_SIZE
+            surf.blit(select_sprite, (pos))
             if self.player.break_timer > 0:
                 surf.blit(
                     breaking_sprites[
@@ -88,7 +88,7 @@ class World:
                             * 4
                         )
                     ],
-                    pos * TILE_SIZE,
+                    pos,
                 )
 
         self.entities.draw(surf, -self.camera)
