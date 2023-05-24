@@ -122,7 +122,7 @@ class Player(pg.sprite.Sprite):
                 self.break_timer = 0
 
             if mouse[2]:
-                if self.equipped_stack and isinstance(self.equipped_stack.item, t.Tile):
+                if self.equipped_stack and isinstance(self.equipped_stack.item_data, t.Tile):
                     if not t.DIRT.rect.move(*(tile_pos)).colliderect(
                         self.rect
                     ):

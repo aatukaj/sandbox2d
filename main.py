@@ -12,7 +12,7 @@ from settings import *
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 
 from world import World
-from inventory import Inventory
+from inventory import Inventory, ItemStack
 
 
 class State(enum.Enum):
@@ -29,7 +29,7 @@ def main():
     hotbar = Inventory(9, 1, font)
     hotbar.selected_index = 0
     hotbar.rect.bottom = HEIGHT - 10
-    grabbed_item = None
+    mouse_item_stack = ItemStack()
     background = win.copy()
     debug_on = True
 
@@ -63,9 +63,9 @@ def main():
             win.blit(background, (0, 0))
             inventory.draw(win)
             hotbar.draw(win)
-            if grabbed_item:
+            if mouse_item_stack:
                 mpos = pg.Vector2(pg.mouse.get_pos())
-                grabbed_item.draw(font, *(mpos - pg.Vector2(TILE_SIZE / 2)), win)
+                mouse_item_stack.draw(font, *(mpos - pg.Vector2(TILE_SIZE / 2)), win)
         if debug_on:
             debug_draw()
         pg.display.flip()
@@ -92,7 +92,7 @@ def main():
                 ) % 9
             if state == State.INVENTORY:
                 for ui in [inventory, hotbar]:
-                    grabbed_item = ui.handle_event(event, grabbed_item)
+                    ui.handle_event(event, mouse_item_stack)
 
 
 if __name__ == "__main__":

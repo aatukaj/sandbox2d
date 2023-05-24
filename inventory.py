@@ -3,24 +3,51 @@ import pygame.freetype as ft
 import tiles as t
 from settings import *
 
-
 class ItemStack:
-    def __init__(self, item, item_count):
-        self.item = item
-        self.item_count = item_count
-        self.rect = 0
+    def __init__(self, item_data = None, stack_size = -1):
+        self.item_data = item_data
+        self.stack_size = stack_size
 
-    def draw(self, font, x, y, surf):
-        if self.item is None:
-            return
-        surf.blit(self.item.img, (x, y))
-        if self.item_count > 1:
-            font.render_to(surf, (x, y), str(self.item_count), (255, 255, 255))
+    def clear(self):
+        self.item_data = None
+        self.stack_size = -1
+
+    def is_empty(self):
+        return self.item_data is None and self.stack_size == -1
+
+    def add(self, item_data, amount):
+        if item_data == self.item_data:
+            self.stack_size += amount
+            return True
+        return False
+
+    def combine(self, other):
+        if self.is_empty():
+            self.set_data(other.item_data, other.stack_size)
+            other.clear()
+        elif other.item_data == self.item_data:
+            self.stack_size += other.stack_size
+            other.clear()
+
 
     def remove(self, amount):
-        self.item_count -= amount
-        if self.item_count <= 0:
-            self.item = None
+        self.stack_size -= amount
+        if self.stack_size <= 0:
+            self.clear()
+
+    def set_data(self, item_data, stack_size):
+        self.item_data = item_data
+        self.stack_size = stack_size
+
+
+    def draw(self, font, x, y, surf):
+        if self.item_data is None:
+            return
+        surf.blit(self.item_data.img, (x, y))
+        if self.stack_size > 1:
+            font.render_to(surf, (x, y), str(self.stack_size), (255, 255, 255))
+
+
 
 
 class Inventory:
@@ -61,9 +88,9 @@ class Inventory:
 
         return item_rects
 
-    def handle_event(self, event: pg.Event, grabbed_item):
+    def handle_event(self, event: pg.Event, mouse_item_stack):
         if event.type != pg.MOUSEBUTTONDOWN or event.button != 1 or not self.rect.collidepoint(*event.pos):
-            return grabbed_item
+            return
 
 
         # translate the event pos
@@ -72,20 +99,16 @@ class Inventory:
 
         # collision is -1 when there aren't any collisions
         if collision == -1:
-            return grabbed_item
+            return
         
         itemstack = self.items[collision]
 
-        if grabbed_item is None:
-            self.items[collision] = None
-            return itemstack
-        
+        if mouse_item_stack.is_empty():
+            mouse_item_stack.combine(itemstack)
+            
         else:
-            if itemstack is None:
-                self.items[collision] = grabbed_item
-            else:
-                itemstack.item_count += grabbed_item.item_count
-            return None
+            itemstack.combine(mouse_item_stack)
+
         
 
     def draw(self, surf: pg.Surface):
