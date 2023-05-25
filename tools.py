@@ -2,10 +2,8 @@ import pygame as pg
 from settings import TILE_SIZE
 
 def load_img(path, transparent = False):
-    if transparent:
-        img = pg.image.load(path).convert_alpha()
-    else: 
-        img = pg.image.load(path).convert()
+    img = pg.image.load(path).convert_alpha()
+
     return pg.transform.scale_by(img, TILE_SIZE / 16)
 
 

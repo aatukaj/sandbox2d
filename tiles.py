@@ -2,27 +2,33 @@ from settings import TILE_SIZE
 from tools import load_img
 import pygame as pg
 from functools import cached_property
-class Tile:
-    def __init__(self, img_path, transparent = False, rect=pg.FRect(0, 0, 1, 1), break_time = 0.5, break_level = 0, max_stack = 64):
-        self.img_path = img_path
-        self.transparent = transparent
+from item import Item, ItemType
+
+
+class Tile(Item):
+    def __init__(
+        self,
+        img_path,
+        name,
+        max_stack=64,
+        rect=pg.FRect(0, 0, 1, 1),
+        break_time=0.5,
+        break_level=0,
+    ):
+        super().__init__(img_path, name, ItemType.TILE, max_stack)
         self.rect = rect
         self.break_time = break_time
         self.break_level = break_level
-        self.max_stack = max_stack
 
-    
-    @cached_property
-    def img(self):
-        #only load the image when its needed
-        #also prevents an error where the image tries to load before pg.set_mode has been called
-        return load_img(self.img_path, self.transparent)
-        
+    def collide(self, pos, other_rect):
+        if self.rect == None: return False
 
-DIRT = Tile("textures/1.png", break_time = 0.5)
-GRASS = Tile("textures/2.png", break_time = 0.5)
-STONE = Tile("textures/3.png")
-GRASS_PLANT = Tile("textures/4.png", transparent=True, rect=None, break_time = 0.1)
-WOOD = Tile("textures/5.png")
-LEAF = Tile("textures/6.png", transparent=True, break_time=0.2)
+        return self.rect.move(pos[0], pos[1]).colliderect(other_rect)
 
+
+DIRT = Tile("textures/1.png", "Dirt", break_time=0.5)
+GRASS = Tile("textures/2.png", "Grass", break_time=0.5)
+STONE = Tile("textures/3.png", "Stone")
+GRASS_PLANT = Tile("textures/4.png", "Grass Plant", rect=None, break_time=0.1)
+WOOD = Tile("textures/5.png", "Wood")
+LEAF = Tile("textures/6.png", "Leaf", break_time=0.2)

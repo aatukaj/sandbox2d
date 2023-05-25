@@ -1,8 +1,9 @@
 import pygame as pg
-from settings import TILE_SIZE
+from settings import TILE_SIZE, font
 from tilemap import Tilemap
 import tiles as t
-
+from item import ItemType
+from inventory import Inventory
 
 class Player(pg.sprite.Sprite):
     def __init__(self, x, y, *groups):
@@ -20,6 +21,10 @@ class Player(pg.sprite.Sprite):
         self.break_timer = 0
 
         self.equipped_stack = None
+        self.inventory = Inventory(9, 4, font)
+
+        self.inventory.add(t.DIRT, 64)
+        self.inventory.add(t.DIRT, 64)
 
         self.flying = False
 
@@ -100,6 +105,14 @@ class Player(pg.sprite.Sprite):
                     self.vel.x = 0
                     self.rect.left = collision.right
 
+    def right_click(self, world, tile_pos):
+        if self.equipped_stack.is_empty():
+            return
+        if self.equipped_stack.item_data.item_type == ItemType.TILE:
+            if not self.equipped_stack.item_data.collide(tile_pos, self.rect):
+                if world.tilemap.set_tile(tile_pos, self.equipped_stack.item_data, replace=False):
+                    self.equipped_stack.remove(1)
+
     def handle_mouse(self, camera, world, dt):
         mouse = pg.mouse.get_pressed()
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
@@ -115,18 +128,15 @@ class Player(pg.sprite.Sprite):
                     self.break_timer = 0
 
                 if self.break_timer >= tile.break_time:
+                    self.inventory.add(world.tilemap.get_tile(tile_pos), 1)
                     world.tilemap.set_tile(tile_pos, None)
+                    
                     self.break_timer = 0
 
             else:
                 self.break_timer = 0
 
             if mouse[2]:
-                if self.equipped_stack and isinstance(self.equipped_stack.item_data, t.Tile):
-                    if not t.DIRT.rect.move(*(tile_pos)).colliderect(
-                        self.rect
-                    ):
-                        if world.tilemap.set_tile(tile_pos, t.DIRT, replace=False):
-                            self.equipped_stack.remove(1)
+                self.right_click(world, tile_pos)
         else:
             self.selected_tile = None

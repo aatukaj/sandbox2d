@@ -3,9 +3,8 @@ import pygame as pg
 import pygame.freetype as ft
 import numpy
 
-
 pg.display.init()
-ft.init()
+
 
 from settings import *
 
@@ -24,8 +23,9 @@ def main():
     state = State.GAME
     clock = pg.Clock()
     world = World()
-    font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
-    inventory = Inventory(9, 4, font)
+    # font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
+    
+    inventory = world.player.inventory
     hotbar = Inventory(9, 1, font)
     hotbar.selected_index = 0
     hotbar.rect.bottom = HEIGHT - 10
@@ -37,7 +37,7 @@ def main():
         player = world.player
         lines = [
             f"fps={clock.get_fps():.2f}, {dt=}",
-            f"player.pos=[{player.pos.x:.2f}, {player.pos.y:.2f}]",
+            f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
             f"player.vel={player.vel.xy}",
             f"player.break_time={player.break_timer:.2f}",
             f"player.selected_tile={player.selected_tile}",
