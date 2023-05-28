@@ -49,7 +49,7 @@ class Tilemap:
         return tile_coords if self.is_inside(tile_coords) else False
 
     def get_collisions(self, rect: pg.FRect):
-        # only works when rect dimensions are <= TILE_SIZE
+        # only works when rect dimensions are <= 1
         x1 = rect.left // 1
         y1 = rect.top // 1
         x2 = rect.right // 1

@@ -3,8 +3,9 @@ import pygame.freetype as ft
 ft.init()
 
 TILE_SIZE = 16
-WIDTH = 480
-HEIGHT = 270
-FLAGS = pg.SCALED | pg.RESIZABLE
+HEIGHT = 360
+WIDTH = HEIGHT/9 * 14
 
+FLAGS = pg.SCALED | pg.RESIZABLE
+#FLAGS = pg.SCALED | pg.RESIZABLE | pg.FULLSCREEN
 font = ft.Font("textures/scientifica/ttf/scientifica.ttf", 11)

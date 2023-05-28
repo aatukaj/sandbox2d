@@ -22,7 +22,7 @@ class World:
         self.tilemap = Tilemap(2000, 1000)
         self.player = Player(
             self.tilemap.width // 2,
-            self.tilemap.height // 2 - 10,
+            self.tilemap.height // 2 - 5,
             self.entities,
         )
         self.camera = pg.Vector2()
@@ -94,7 +94,7 @@ class World:
         self.entities.draw(surf, -self.camera)
 
     def update(self, dt):
-        self.entities.update(dt, self.tilemap)
+        self.entities.update(dt=dt, world=self)
         self.handle_mouse(dt)
 
     def handle_mouse(self, dt):

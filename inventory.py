@@ -13,11 +13,14 @@ class ItemStack:
         self.item_data = None
         self.stack_size = -1
 
+
+
+    @property
     def is_empty(self):
         return self.item_data is None and self.stack_size == -1
 
     def combine(self, other):
-        if self.is_empty():
+        if self.is_empty:
             self.set_data(other.item_data, other.stack_size)
             other.clear()
 
@@ -48,11 +51,27 @@ class ItemStack:
 
 
 class Inventory:
-    def __init__(self, width, height, font: ft.Font):
+    def __init__(self, size):
+        self.size = size
+        self.items = [ItemStack() for _ in range(size)]
+        
+    def add(self, item_data, stack_size):
+        add_item_stack = ItemStack(item_data, stack_size)
+        for item_stack in self.items:
+            item_stack.combine(add_item_stack)
+            if add_item_stack.is_empty:
+                break
+
+
+class InventoryUI:
+    def __init__(self, item_stacks, width, height):
+        
+        self.items = item_stacks
         self.width = width
         self.height = height
-        self.items = [ItemStack() for _ in range(width * height)]
         self.selected_index = None
+        
+
 
         self.cell_margin = 4
         self.cell_padding = 2
@@ -66,17 +85,10 @@ class Inventory:
             self.cell_total * self.width - self.cell_margin + self.rect_padding * 2,
             self.cell_total * self.height - self.cell_margin + self.rect_padding * 2,
         )
+
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
         self.item_rects = self.generate_rects()
         self.surface = pg.Surface(self.rect.size)
-
-    def add(self, item_data, stack_size):
-        add_item_stack = ItemStack(item_data, stack_size)
-        for item_stack in self.items:
-            item_stack.combine(add_item_stack)
-            if add_item_stack.is_empty():
-                break
-
 
     def generate_rects(self):
         item_rects = []
@@ -90,7 +102,7 @@ class Inventory:
             )
 
         return item_rects
-
+    
     def handle_event(self, event: pg.Event, mouse_item_stack):
         if (
             event.type != pg.MOUSEBUTTONDOWN
@@ -109,7 +121,7 @@ class Inventory:
 
         itemstack = self.items[collision]
 
-        if mouse_item_stack.is_empty():
+        if mouse_item_stack.is_empty:
             mouse_item_stack.combine(itemstack)
 
         else:
@@ -132,8 +144,3 @@ class Inventory:
                 )
 
         surf.blit(self.surface, self.rect)
-
-
-class InventoryUI:
-    def __init__(self, item_stacks):
-        self.item_stacks = item_stacks

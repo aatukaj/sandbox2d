@@ -3,6 +3,7 @@ import pygame as pg
 import pygame.freetype as ft
 import numpy
 
+
 pg.display.init()
 
 
@@ -11,7 +12,7 @@ from settings import *
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 
 from world import World
-from inventory import Inventory, ItemStack
+from inventory import Inventory, ItemStack, InventoryUI
 
 
 class State(enum.Enum):
@@ -25,8 +26,8 @@ def main():
     world = World()
     # font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
     
-    inventory = world.player.inventory
-    hotbar = Inventory(9, 1, font)
+    inventory = InventoryUI(world.player.inventory.items[:9*4], 9, 4)
+    hotbar = InventoryUI(world.player.inventory.items[-9:], 9, 1)
     hotbar.selected_index = 0
     hotbar.rect.bottom = HEIGHT - 10
     mouse_item_stack = ItemStack()
@@ -34,9 +35,10 @@ def main():
     debug_on = True
 
     def debug_draw():
+        
         player = world.player
         lines = [
-            f"fps={clock.get_fps():.2f}, {dt=}",
+            f"fps={clock.get_fps():.0f}, {dt=}",
             f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
             f"player.vel={player.vel.xy}",
             f"player.break_time={player.break_timer:.2f}",
@@ -51,7 +53,11 @@ def main():
             y += 10
 
     while True:
+        
         dt = clock.tick(144) / 1000
+
+        #throttle dt
+        dt = min(dt, 0.2)
         world.player.equipped_stack = hotbar.items[hotbar.selected_index]
         if state == State.GAME:
             world.update(dt)
@@ -93,7 +99,7 @@ def main():
             if state == State.INVENTORY:
                 for ui in [inventory, hotbar]:
                     ui.handle_event(event, mouse_item_stack)
-
+        
 
 if __name__ == "__main__":
     main()
