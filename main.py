@@ -23,7 +23,7 @@ class State(enum.Enum):
 def main():
     state = State.GAME
     clock = pg.Clock()
-    world = World()
+    world = World(win)
     # font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
     
     inventory = InventoryUI(world.player.inventory.items[:9*4], 9, 4)
@@ -41,8 +41,8 @@ def main():
             f"fps={clock.get_fps():.0f}, {dt=}",
             f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
             f"player.vel={player.vel.xy}",
-            f"player.break_time={player.break_timer:.2f}",
-            f"player.selected_tile={player.selected_tile}",
+            f"player.break_time={player.input_component.break_timer:.2f}",
+            f"player.selected_tile={player.input_component.selected_tile}",
         ]
         bg = pg.Surface((170, 80), pg.SRCALPHA)
         bg.fill((0, 0, 0, 125))
@@ -61,8 +61,6 @@ def main():
         world.player.equipped_stack = hotbar.items[hotbar.selected_index]
         if state == State.GAME:
             world.update(dt)
-
-            world.draw(win)
             hotbar.draw(win)
 
         if state == State.INVENTORY:

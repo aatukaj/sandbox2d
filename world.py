@@ -1,6 +1,6 @@
 import random
 from tilemap import Tilemap
-from player import Player
+from player import Player2, TileOverlay
 from tools import OffsetGroup
 import opensimplex
 from settings import *
@@ -10,21 +10,20 @@ from tools import load_img
 
 import pygame as pg
 
-breaking_sprites = [
-    load_img(f"textures/breaking/{i}.png", transparent=True) for i in range(1, 5)
-]
-select_sprite = load_img("textures/select.png", transparent=True)
+
 
 
 class World:
-    def __init__(self):
-        self.entities = OffsetGroup()
+    def __init__(self, surface):
+        self.surf = surface
+        self.layer0 = []
         self.tilemap = Tilemap(2000, 1000)
-        self.player = Player(
+        self.player = Player2(
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
-            self.entities,
         )
+        self.layer0.append(self.player)
+        self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
 
@@ -67,36 +66,19 @@ class World:
             (pos - pg.Vector2(2, bark_length + 2)), tree, replace=False
         )
 
-    def draw(self, surf: pg.Surface):
-        surf.fill("#79A6FF")
+    def draw(self):
+        self.surf.fill("#79A6FF")
         self.camera.xy = (pg.Vector2(self.player.rect.center)) - pg.Vector2(
             WIDTH, HEIGHT
         ) // (2 * TILE_SIZE)
+        self.tilemap.draw(self.surf, -self.camera)
 
-        self.tilemap.draw(surf, -self.camera)
-        if self.player.selected_tile:
-            pos = (self.player.selected_tile - self.camera) * TILE_SIZE
-            surf.blit(select_sprite, (pos))
-            if self.player.break_timer > 0:
-                surf.blit(
-                    breaking_sprites[
-                        int(
-                            self.player.break_timer
-                            / self.tilemap.get_tile(
-                                self.player.selected_tile
-                            ).break_time
-                            * 4
-                        )
-                    ],
-                    pos,
-                )
 
-        self.entities.draw(surf, -self.camera)
 
     def update(self, dt):
-        self.entities.update(dt=dt, world=self)
-        self.handle_mouse(dt)
+        self.draw()
+        self.dt = dt
+        for i in self.layer0:
+            i.update(self)
 
-    def handle_mouse(self, dt):
-        # move this logic into player
-        self.player.handle_mouse(self.camera, self, dt)
+
