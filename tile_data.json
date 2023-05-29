@@ -1,0 +1,10 @@
+{
+    "Dirt": {
+        "img": "textures/1.png",
+        "break_time" : 0.5
+    },
+    "Grass": {
+        "img": "textures/1.png",
+        "break_time" : 0.5
+    }
+}

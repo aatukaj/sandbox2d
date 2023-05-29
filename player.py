@@ -1,7 +1,7 @@
 import pygame as pg
 from settings import TILE_SIZE, font
 from tilemap import Tilemap
-import tiles as t
+from tiles import Tiles as t
 from item import ItemType
 from inventory import Inventory
 from tools import load_img
@@ -32,11 +32,11 @@ class PhysicsComponent:
         self.grounded = False
         self.flying = False
         self.gravity = pg.Vector2(0, 20)
+
     def update(self, game_object: GameObject, world: "World", dt: float):
         tilemap = world.tilemap
         rect = game_object.rect
         old_rect = rect.copy()
-
         game_object.vel += self.gravity * dt
         rect.y += game_object.vel.y * dt
 
@@ -73,7 +73,7 @@ class SimpleRenderer:
 
     def update(self, game_object: GameObject, world: "World") -> None:
         world.surf.blit(
-            self.image, (game_object.rect.topleft - world.camera) * TILE_SIZE // 1
+            self.image, (game_object.pos - world.camera) * TILE_SIZE
         )
 
 
@@ -130,7 +130,6 @@ class PlayerInputComponent(InputComponent):
         mouse = pg.mouse.get_pressed()
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
         tile_pos = world.tilemap.get_tile_coords((mouse_pos + world.camera) // 1)
-        print(tile_pos)
         if tile_pos and (game_object.pos).distance_to(tile_pos) <= self.reach:
             tile = world.tilemap.get_tile(tile_pos)
             prev_tile_pos = self.selected_tile
@@ -160,7 +159,6 @@ class Player2(GameObject):
         super().__init__(x, y)
         self.vel = pg.Vector2(0, 0)
 
-
         self.image = pg.Surface((TILE_SIZE - 3, TILE_SIZE - 3))
         self.image.fill((255, 255, 255))
         self.rect = pg.FRect((x, y), pg.Vector2(self.image.get_rect().size) / TILE_SIZE)
@@ -168,7 +166,9 @@ class Player2(GameObject):
 
         self.inventory = Inventory(9 * 5)
 
-        self.inventory.items[0].set_data(t.DIRT, 999)
+
+        for i, tile in enumerate(t):
+            self.inventory.items[i].set_data(tile.value, 999)
 
         self.input_component = PlayerInputComponent()
         self.physics_component = PhysicsComponent()

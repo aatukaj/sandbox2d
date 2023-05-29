@@ -4,7 +4,7 @@ from player import Player2, TileOverlay
 from tools import OffsetGroup
 import opensimplex
 from settings import *
-import tiles as t
+from tiles import Tiles
 from tools import load_img
 
 
@@ -36,7 +36,7 @@ class World:
         for x in range(self.tilemap.width):
             ground_y = int(opensimplex.noise2(x / 15, 0) * 8) + base_ground_y
             stone_offset = int(opensimplex.noise2(x / 20, 2) * 5)
-            self.tilemap.set_tile((x, ground_y), t.GRASS)
+            self.tilemap.set_tile((x, ground_y), Tiles.GRASS.value)
 
             if last_tree + 1 < x and random.random() > 0.95:
                 last_tree = x
@@ -45,21 +45,23 @@ class World:
                     bark_length=random.choices([1, 2, 3, 4], weights=(1, 3, 3, 1))[0],
                 )
             if random.random() > 0.7:
-                self.tilemap.set_tile((x, ground_y - 1), t.GRASS_PLANT, replace=False)
+                self.tilemap.set_tile((x, ground_y - 1), Tiles.GRASS_PLANT.value, replace=False)
 
             for y in range(ground_y + 1, self.tilemap.height):
                 if y < ground_y + 6 + stone_offset:
-                    self.tilemap.set_tile((x, y), t.DIRT)
+                    self.tilemap.set_tile((x, y), Tiles.DIRT.value)
                 else:
-                    self.tilemap.set_tile((x, y), t.STONE)
+                    self.tilemap.set_tile((x, y), Tiles.STONE.value)
 
     def generate_tree(self, pos, bark_length=2):
+        leaf_t = Tiles.LEAF.value
+        bark_t = Tiles.WOOD.value
         leafs = [
-            [None, t.LEAF, t.LEAF, t.LEAF, None],
-            [t.LEAF, t.LEAF, t.LEAF, t.LEAF, t.LEAF],
-            [t.LEAF, t.LEAF, t.LEAF, t.LEAF, t.LEAF],
+            [None, leaf_t, leaf_t, leaf_t, None],
+            [leaf_t, leaf_t, leaf_t, leaf_t, leaf_t],
+            [leaf_t, leaf_t, leaf_t, leaf_t, leaf_t],
         ]
-        bark = [[None, None, t.WOOD, None, None]] * bark_length
+        bark = [[None, None, bark_t, None, None]] * bark_length
         tree = leafs + bark
 
         self.tilemap.set_tiles(

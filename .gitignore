@@ -4,5 +4,3 @@ env
 .vscode
 __pycache__
 *.aseprite
-otb
-ttf

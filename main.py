@@ -10,7 +10,7 @@ pg.display.init()
 from settings import *
 
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
-
+print(win)
 from world import World
 from inventory import Inventory, ItemStack, InventoryUI
 

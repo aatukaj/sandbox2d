@@ -69,7 +69,7 @@ class InventoryUI:
         self.items = item_stacks
         self.width = width
         self.height = height
-        self.selected_index = None
+        self.selected_index = -1
         
 
 
@@ -135,7 +135,7 @@ class InventoryUI:
             if self.selected_index == i:
                 pg.draw.rect(self.surface, "#feae34", rect, width=1)
             item_stack = self.items[i]
-            if item_stack is not None:
+            if item_stack != -1:
                 item_stack.draw(
                     self.font,
                     rect.x + self.cell_padding // 2,
