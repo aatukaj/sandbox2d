@@ -15,8 +15,8 @@ class OffsetGroup(pg.sprite.Group):
 
 
 class Timer:
-    def __init__(self, duration):
-        self.time = 0
+    def __init__(self, duration, initial_time = 0):
+        self.time = initial_time
         self.duration = duration
     def tick(self, dt):
         self.time += dt

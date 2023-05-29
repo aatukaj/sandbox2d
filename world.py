@@ -21,7 +21,8 @@ class World:
             self.tilemap.height // 2 - 5,
         )
         self.layer0.append(self.player)
-        self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5))))
+        for i in range(10):
+            self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5+i))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
@@ -78,12 +79,20 @@ class World:
         for i in self.layer0:
             i.draw(self)
 
+    def get_collision_rects(self, rect: pg.FRect):
+        rects = [
+            game_object.physics_component.rect
+            for game_object in self.layer0
+            if hasattr(game_object, "physics_component")
+        ]
+        return self.tilemap.get_collisions(rect) + [
+            rects[i] for i in rect.collidelistall(rects)
+        ]
 
-   
     def get_mouse_tile_pos(self):
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
         return self.tilemap.get_tile_coords((mouse_pos + self.camera) // 1)
-    
+
     def draw_image(self, pos, image):
         self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
 

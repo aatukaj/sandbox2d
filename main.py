@@ -43,7 +43,7 @@ def main():
             f"player.pos=[{player.physics_component.rect.x:.2f}, {player.physics_component.rect.y:.2f}]",
             f"player.vel={player.vel.xy}",
             f"player.break_time={player.input_component.break_timer:.2f}",
-            f"player.selected_tile={player.input_component.selected_tile}",
+            f"mouse_tile={world.get_mouse_tile_pos()}",
         ]
         bg = pg.Surface((170, 80), pg.SRCALPHA)
         bg.fill((0, 0, 0, 125))

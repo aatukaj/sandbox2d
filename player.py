@@ -7,7 +7,7 @@ from tools import load_img, Timer
 import abc
 import math
 from typing import TYPE_CHECKING
-
+import random
 if TYPE_CHECKING:
     from world import World
 
@@ -112,15 +112,14 @@ class PhysicsComponent(Component):
 
     def update(self, game_object: GameObject, world: "World"):
         dt = world.dt
-        tilemap = world.tilemap
         self.rect.topleft = game_object.pos.xy
         rect = self.rect
         old_rect = rect.copy()
         game_object.vel += self.gravity * dt
         rect.y += game_object.vel.y * dt
 
-        collisions = tilemap.get_collisions(rect)
-
+        collisions = world.get_collision_rects(rect)
+        self.grounded = False
         if collisions:
             for collision in collisions:
                 if rect.bottom >= collision.top and old_rect.bottom <= collision.top:
@@ -131,10 +130,9 @@ class PhysicsComponent(Component):
                 elif rect.top <= collision.bottom and old_rect.top >= collision.bottom:
                     game_object.vel.y = 0
                     rect.top = collision.bottom
-        else:
-            self.grounded = False
+            
         rect.x += game_object.vel.x * dt
-        collisions = tilemap.get_collisions(rect)
+        collisions = world.get_collision_rects(self.rect)
         if collisions:
             for collision in collisions:
                 if rect.right >= collision.left and old_rect.right <= collision.left:
@@ -176,7 +174,8 @@ class Player2(GameObject):
 
 class SimpleAIComponent(Component):
     def __init__(self):
-        self.update_timer = Timer(0.3)
+        self.update_timer = Timer(0.3, random.random() * 0.3)
+
     def update(self, game_object: GameObject, world: "World"):
         if not self.update_timer.tick(world.dt):
             return

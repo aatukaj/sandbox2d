@@ -77,5 +77,4 @@ class Tilemap:
                 tile = self.tiles[int(point.y)][int(point.x)]
                 if tile is not None and tile.rect is not None:
                     rects.append(tile.rect.move(point))
-        if rects:
-            return [rects[i] for i in rect.collidelistall(rects)]
+        return [rects[i] for i in rect.collidelistall(rects)]
