@@ -12,3 +12,15 @@ class OffsetGroup(pg.sprite.Group):
     def draw(self, surf: pg.Surface, offset=pg.Vector2(0, 0)):
         for sprite in self.sprites():
             surf.blit(sprite.image, (sprite.rect.topleft + offset) * TILE_SIZE)
+
+
+class Timer:
+    def __init__(self, duration):
+        self.time = 0
+        self.duration = duration
+    def tick(self, dt):
+        self.time += dt
+        if self.time >= self.duration:
+            self.time = self.time % self.duration
+            return True
+        return False

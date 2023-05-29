@@ -27,6 +27,15 @@ class Tilemap:
 
     def is_inside(self, pos):
         return (0 <= pos[0] < self.width) and (0 <= pos[1] < self.height)
+    
+
+    
+    def is_tile_collidable(self, pos):
+        """
+        Returns True if the tile at pos has is collidable (has a rect)
+        """
+        tile = self.get_tile(pos)
+        return tile is not None and tile.rect is not None
 
     def set_tile(self, pos, val, replace=True):
         if self.is_inside(pos):

@@ -1,6 +1,6 @@
 import random
 from tilemap import Tilemap
-from player import Player2, TileOverlay
+from player import Player2, TileOverlay, Enemy1
 from tools import OffsetGroup
 import opensimplex
 from settings import *
@@ -9,8 +9,6 @@ from tools import load_img
 
 
 import pygame as pg
-
-
 
 
 class World:
@@ -23,6 +21,7 @@ class World:
             self.tilemap.height // 2 - 5,
         )
         self.layer0.append(self.player)
+        self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
@@ -45,7 +44,9 @@ class World:
                     bark_length=random.choices([1, 2, 3, 4], weights=(1, 3, 3, 1))[0],
                 )
             if random.random() > 0.7:
-                self.tilemap.set_tile((x, ground_y - 1), Tiles.GRASS_PLANT.value, replace=False)
+                self.tilemap.set_tile(
+                    (x, ground_y - 1), Tiles.GRASS_PLANT.value, replace=False
+                )
 
             for y in range(ground_y + 1, self.tilemap.height):
                 if y < ground_y + 6 + stone_offset:
@@ -70,17 +71,24 @@ class World:
 
     def draw(self):
         self.surf.fill("#79A6FF")
-        self.camera.xy = (pg.Vector2(self.player.rect.center)) - pg.Vector2(
-            WIDTH, HEIGHT
-        ) // (2 * TILE_SIZE)
+        self.camera.xy = (
+            pg.Vector2(self.player.physics_component.rect.center)
+        ) - pg.Vector2(WIDTH, HEIGHT) // (2 * TILE_SIZE)
         self.tilemap.draw(self.surf, -self.camera)
+        for i in self.layer0:
+            i.draw(self)
 
 
+   
+    def get_mouse_tile_pos(self):
+        mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
+        return self.tilemap.get_tile_coords((mouse_pos + self.camera) // 1)
+    
+    def draw_image(self, pos, image):
+        self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
 
     def update(self, dt):
-        self.draw()
         self.dt = dt
         for i in self.layer0:
             i.update(self)
-
-
+        self.draw()

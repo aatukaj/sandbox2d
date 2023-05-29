@@ -4,6 +4,7 @@ import pygame.freetype as ft
 import numpy
 
 
+
 pg.display.init()
 
 
@@ -39,7 +40,7 @@ def main():
         player = world.player
         lines = [
             f"fps={clock.get_fps():.0f}, {dt=}",
-            f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
+            f"player.pos=[{player.physics_component.rect.x:.2f}, {player.physics_component.rect.y:.2f}]",
             f"player.vel={player.vel.xy}",
             f"player.break_time={player.input_component.break_timer:.2f}",
             f"player.selected_tile={player.input_component.selected_tile}",
@@ -54,7 +55,7 @@ def main():
 
     while True:
         
-        dt = clock.tick(144) / 1000
+        dt = clock.tick() / 1000
 
         #throttle dt
         dt = min(dt, 0.2)
