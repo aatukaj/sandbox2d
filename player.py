@@ -44,12 +44,12 @@ class PlayerInputComponent(Component):
 
     def handle_keys(self, game_object: GameObject):
         keys = pg.key.get_pressed()
-        speed_x = 0
+        speed_x = game_object.vel.x
 
         if keys[pg.K_d]:
-            speed_x += 5
+            speed_x = 5
         if keys[pg.K_a]:
-            speed_x -= 5
+            speed_x = -5
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
             game_object.vel.y = -13
@@ -117,11 +117,11 @@ class PhysicsComponent(Component):
         old_rect = rect.copy()
         game_object.vel += self.gravity * dt
         rect.y += game_object.vel.y * dt
-
-        collisions = world.get_collision_rects(rect)
+        
+        tile_collisions = world.tilemap.get_collisions(rect)
         self.grounded = False
-        if collisions:
-            for collision in collisions:
+        if tile_collisions:
+            for collision in tile_collisions:
                 if rect.bottom >= collision.top and old_rect.bottom <= collision.top:
                     game_object.vel.y = 0
                     self.grounded = True
@@ -132,9 +132,9 @@ class PhysicsComponent(Component):
                     rect.top = collision.bottom
             
         rect.x += game_object.vel.x * dt
-        collisions = world.get_collision_rects(self.rect)
-        if collisions:
-            for collision in collisions:
+        tile_collisions = world.tilemap.get_collisions(rect)
+        if tile_collisions:
+            for collision in tile_collisions:
                 if rect.right >= collision.left and old_rect.right <= collision.left:
                     game_object.vel.x = 0
                     rect.right = collision.left
@@ -142,8 +142,18 @@ class PhysicsComponent(Component):
                 elif rect.left <= collision.right and old_rect.left >= collision.right:
                     game_object.vel.x = 0
                     rect.left = collision.right
+
+        if entity_collisions := world.get_entity_collisions(rect):
+            for collision in entity_collisions:
+                dist = pg.Vector2(rect.center).distance_to(collision.center)
+                dist = 1
+                direction = (pg.Vector2(rect.center) - pg.Vector2(collision.center)).normalize()
+                game_object.vel = direction* (1/dist) * 1
+
         
         game_object.pos.xy = rect.topleft
+        if self.grounded:
+            game_object.vel.x-= math.copysign(20*dt, game_object.vel.x)
 
 class Player2(GameObject):
     def __init__(self, x, y):
@@ -175,13 +185,15 @@ class Player2(GameObject):
 class SimpleAIComponent(Component):
     def __init__(self):
         self.update_timer = Timer(0.3, random.random() * 0.3)
+        self.speed_x = 0
 
     def update(self, game_object: GameObject, world: "World"):
+        game_object.vel.x = self.speed_x
         if not self.update_timer.tick(world.dt):
             return
 
         sign = math.copysign(1,  world.player.pos.x - game_object.pos.x)
-        game_object.vel.x = 2 * sign
+        self.speed_x = 2 * sign
         tile_pos = (game_object.pos + pg.Vector2(sign, 0)) // 1
         if game_object.physics_component.grounded and world.tilemap.is_tile_collidable(tile_pos):
             rect = game_object.physics_component.rect

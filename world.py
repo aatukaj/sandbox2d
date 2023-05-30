@@ -80,14 +80,18 @@ class World:
             i.draw(self)
 
     def get_collision_rects(self, rect: pg.FRect):
+        return self.tilemap.get_collisions(rect) + self.get_entity_collisions(rect)
+    
+    def get_entity_collisions(self, rect: pg.FRect):
         rects = [
             game_object.physics_component.rect
             for game_object in self.layer0
-            if hasattr(game_object, "physics_component")
+            if hasattr(game_object, "physics_component") and game_object.physics_component.rect != rect
         ]
-        return self.tilemap.get_collisions(rect) + [
+        return [
             rects[i] for i in rect.collidelistall(rects)
         ]
+
 
     def get_mouse_tile_pos(self):
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
