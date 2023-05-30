@@ -21,7 +21,7 @@ class World:
             self.tilemap.height // 2 - 5,
         )
         self.layer0.append(self.player)
-        for i in range(10):
+        for i in range(50):
             self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5+i))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
@@ -83,6 +83,7 @@ class World:
         return self.tilemap.get_collisions(rect) + self.get_entity_collisions(rect)
     
     def get_entity_collisions(self, rect: pg.FRect):
+        #def need to optimize this, maybe using https://en.wikipedia.org/wiki/Quadtree
         rects = [
             game_object.physics_component.rect
             for game_object in self.layer0

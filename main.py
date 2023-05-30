@@ -1,7 +1,9 @@
+import ez_profile
+
+
 import enum
 import pygame as pg
 import pygame.freetype as ft
-
 
 
 pg.display.init()
@@ -39,7 +41,7 @@ def main():
         lines = [
             f"fps={clock.get_fps():.0f}, {dt=}",
             f"player.pos=[{player.physics_component.rect.x:.2f}, {player.physics_component.rect.y:.2f}]",
-            f"player.vel={player.vel.xy}",
+            f"player.vel=[{player.vel.x:.2f}, {player.vel.y:.2f}]",
             f"player.break_time={player.input_component.break_timer:.2f}",
             f"mouse_tile={world.get_mouse_tile_pos()}",
         ]

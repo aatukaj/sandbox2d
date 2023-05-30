@@ -44,16 +44,16 @@ class PlayerInputComponent(Component):
 
     def handle_keys(self, game_object: GameObject):
         keys = pg.key.get_pressed()
-        speed_x = game_object.vel.x
+
 
         if keys[pg.K_d]:
-            speed_x = 5
+            game_object.vel.x = max(5, game_object.vel.x)
         if keys[pg.K_a]:
-            speed_x = -5
+            game_object.vel.x = min(-5, game_object.vel.x)
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
             game_object.vel.y = -13
-        game_object.vel.x = speed_x
+
 
         if game_object.physics_component.flying:
             speed_y = 0
@@ -115,6 +115,16 @@ class PhysicsComponent(Component):
         self.rect.topleft = game_object.pos.xy
         rect = self.rect
         old_rect = rect.copy()
+
+        if entity_collisions := world.get_entity_collisions(rect):
+            for collision in entity_collisions:
+                dist = pg.Vector2(rect.center).distance_to(collision.center)
+                
+                if dist < 0.6:
+                    direction = (pg.Vector2(rect.center) - pg.Vector2(collision.center)).normalize()
+                    game_object.vel.x = direction.x * 1
+                #game_object.vel.y = direction.x * 0.1
+
         game_object.vel += self.gravity * dt
         rect.y += game_object.vel.y * dt
         
@@ -143,17 +153,13 @@ class PhysicsComponent(Component):
                     game_object.vel.x = 0
                     rect.left = collision.right
 
-        if entity_collisions := world.get_entity_collisions(rect):
-            for collision in entity_collisions:
-                dist = pg.Vector2(rect.center).distance_to(collision.center)
-                dist = 1
-                direction = (pg.Vector2(rect.center) - pg.Vector2(collision.center)).normalize()
-                game_object.vel = direction* (1/dist) * 1
-
         
-        game_object.pos.xy = rect.topleft
+
+
         if self.grounded:
-            game_object.vel.x-= math.copysign(20*dt, game_object.vel.x)
+            game_object.vel.x-= 20*game_object.vel.x*dt
+        game_object.pos.xy = rect.topleft
+        
 
 class Player2(GameObject):
     def __init__(self, x, y):
@@ -176,7 +182,7 @@ class Player2(GameObject):
     def update(self, world: "World"):
         self.input_component.update(self, world)
         self.physics_component.update(self, world)
-
+        
     def draw(self, world: "World"):
         self.render_component.update(self, world)
 
@@ -187,24 +193,36 @@ class SimpleAIComponent(Component):
         self.update_timer = Timer(0.3, random.random() * 0.3)
         self.speed_x = 0
 
+    def jump(self, game_object: GameObject):
+        if game_object.physics_component.grounded:
+            game_object.vel.y = -10 
     def update(self, game_object: GameObject, world: "World"):
-        game_object.vel.x = self.speed_x
+        if self.speed_x > 0:
+            game_object.vel.x = max(self.speed_x, game_object.vel.x)
+        if self.speed_x < 0:
+            game_object.vel.x = min(self.speed_x, game_object.vel.x)
         if not self.update_timer.tick(world.dt):
             return
 
         sign = math.copysign(1,  world.player.pos.x - game_object.pos.x)
         self.speed_x = 2 * sign
         tile_pos = (game_object.pos + pg.Vector2(sign, 0)) // 1
-        if game_object.physics_component.grounded and world.tilemap.is_tile_collidable(tile_pos):
-            rect = game_object.physics_component.rect
-            if tile_pos.x +1 - rect.left < 0.1 or rect.right - tile_pos.x < 0.1:
+        if game_object.physics_component.grounded:
+            if world.tilemap.is_tile_collidable(tile_pos):
+                rect = game_object.physics_component.rect
+                if tile_pos.x +1 - rect.left < 0.1 or rect.right - tile_pos.x < 0.1:
+                    game_object.vel.y = -10
+
+            elif game_object.pos.distance_squared_to(world.player.pos) <= 1**2:
+                game_object.vel.y = -10
+            if random.random() < 0.1:
                 game_object.vel.y = -10
 
 class Enemy1(GameObject):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.image = pg.Surface((TILE_SIZE - 3, TILE_SIZE - 3))
-        self.image.fill((255, 0, 0))
+        self.image.fill((255*random.random(), 0, 0))
 
         self.input_component = SimpleAIComponent()
         self.physics_component = PhysicsComponent(
@@ -215,7 +233,7 @@ class Enemy1(GameObject):
     def update(self, world: "World"):
         self.input_component.update(self, world)
         self.physics_component.update(self, world)
-    
+        
     def draw(self, world: "World"):
         self.render_component.update(self, world)
 
