@@ -19,8 +19,8 @@ class GameObject:
 
     def update(self, world: "World"):
         pass
-
-
+    
+    
 class Component(abc.ABC):
     @abc.abstractmethod
     def update(game_object: GameObject, world: "World") -> None:
@@ -110,34 +110,48 @@ class PhysicsComponent(Component):
         self.gravity = pg.Vector2(0, 20)
         self.rect = rect
 
+
+    def get_corner_tile_positions(self):
+        x1 = self.rect.left // 1
+        y1 = self.rect.top// 1
+        x2 = self.rect.right// 1
+        y2 = self.rect.bottom// 1
+
+        return {
+            (x1, y1),
+            (x1, y2),
+            (x2, y1),
+            (x2, y2),
+        }
+
     def update(self, game_object: GameObject, world: "World"):
         dt = world.dt
         self.rect.topleft = game_object.pos.xy
         rect = self.rect
-        old_rect = rect.copy()
-
-        if entity_collisions := world.get_entity_collisions(rect):
+        
+        if entity_collisions := world.get_entity_collisions(game_object):
             for collision in entity_collisions:
                 dist = pg.Vector2(rect.center).distance_to(collision.center)
                 
-                if dist < 0.6:
+
+                if dist < 0.9 and dist != 0:
                     direction = (pg.Vector2(rect.center) - pg.Vector2(collision.center)).normalize()
                     game_object.vel.x = direction.x * 1
                 #game_object.vel.y = direction.x * 0.1
-
+        
         game_object.vel += self.gravity * dt
         rect.y += game_object.vel.y * dt
-        
         tile_collisions = world.tilemap.get_collisions(rect)
         self.grounded = False
+
         if tile_collisions:
             for collision in tile_collisions:
-                if rect.bottom >= collision.top and old_rect.bottom <= collision.top:
+                if game_object.vel.y > 0:
                     game_object.vel.y = 0
                     self.grounded = True
                     rect.bottom = collision.top
 
-                elif rect.top <= collision.bottom and old_rect.top >= collision.bottom:
+                if game_object.vel.y < 0:
                     game_object.vel.y = 0
                     rect.top = collision.bottom
             
@@ -145,11 +159,11 @@ class PhysicsComponent(Component):
         tile_collisions = world.tilemap.get_collisions(rect)
         if tile_collisions:
             for collision in tile_collisions:
-                if rect.right >= collision.left and old_rect.right <= collision.left:
+                if game_object.vel.x > 0:
                     game_object.vel.x = 0
                     rect.right = collision.left
 
-                elif rect.left <= collision.right and old_rect.left >= collision.right:
+                if game_object.vel.x < 0:
                     game_object.vel.x = 0
                     rect.left = collision.right
 
@@ -193,9 +207,6 @@ class SimpleAIComponent(Component):
         self.update_timer = Timer(0.3, random.random() * 0.3)
         self.speed_x = 0
 
-    def jump(self, game_object: GameObject):
-        if game_object.physics_component.grounded:
-            game_object.vel.y = -10 
     def update(self, game_object: GameObject, world: "World"):
         if self.speed_x > 0:
             game_object.vel.x = max(self.speed_x, game_object.vel.x)

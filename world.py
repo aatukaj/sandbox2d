@@ -20,9 +20,10 @@ class World:
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
         )
+
         self.layer0.append(self.player)
-        for i in range(50):
-            self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5+i))))
+        for i in range(20):
+            self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
@@ -81,18 +82,17 @@ class World:
 
     def get_collision_rects(self, rect: pg.FRect):
         return self.tilemap.get_collisions(rect) + self.get_entity_collisions(rect)
-    
-    def get_entity_collisions(self, rect: pg.FRect):
-        #def need to optimize this, maybe using https://en.wikipedia.org/wiki/Quadtree
-        rects = [
-            game_object.physics_component.rect
-            for game_object in self.layer0
-            if hasattr(game_object, "physics_component") and game_object.physics_component.rect != rect
-        ]
-        return [
-            rects[i] for i in rect.collidelistall(rects)
-        ]
 
+    def get_entity_collisions(self, game_obj):
+        collisions = []
+        for pos in game_obj.physics_component.get_corner_tile_positions():
+            for obj in self.collision_dict.get(pos):
+                if obj != game_obj and obj.physics_component.rect not in collisions:
+                    if game_obj.physics_component.rect.colliderect(
+                        obj.physics_component.rect
+                    ):
+                        collisions.append(obj.physics_component.rect)
+        return collisions
 
     def get_mouse_tile_pos(self):
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
@@ -101,7 +101,19 @@ class World:
     def draw_image(self, pos, image):
         self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
 
+    def update_collision_dict(self):
+        collision_dict = {}
+        for obj in self.layer0:
+            if hasattr(obj, "physics_component"):
+                for i in obj.physics_component.get_corner_tile_positions():
+                    if i in collision_dict:
+                        collision_dict[i].append(obj)
+                    else:
+                        collision_dict[i] = [obj]
+        self.collision_dict = collision_dict
+
     def update(self, dt):
+        self.update_collision_dict()
         self.dt = dt
         for i in self.layer0:
             i.update(self)

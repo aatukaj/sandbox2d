@@ -1,12 +1,10 @@
-import ez_profile
-
-
 import enum
 import pygame as pg
 import pygame.freetype as ft
 
 
 pg.display.init()
+
 
 
 from settings import *
@@ -91,9 +89,7 @@ def main():
                     hotbar.selected_index = int(event.unicode) - 1
 
             if event.type == pg.MOUSEWHEEL:
-                hotbar.selected_index = (
-                    hotbar.selected_index - event.y
-                ) % 9
+                hotbar.selected_index = (hotbar.selected_index - event.y) % 9
             if state == State.INVENTORY:
                 for ui in [inventory, hotbar]:
                     ui.handle_event(event, mouse_item_stack)

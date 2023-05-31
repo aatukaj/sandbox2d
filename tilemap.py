@@ -73,8 +73,9 @@ class Tilemap:
         rects = []
 
         for point in points:
-            if self.is_inside(point):
-                tile = self.tiles[int(point.y)][int(point.x)]
-                if tile is not None and tile.rect is not None:
-                    rects.append(tile.rect.move(point))
-        return [rects[i] for i in rect.collidelistall(rects)]
+            tile = self.get_tile(point)
+            if tile is not None and tile.rect is not None:
+                tile_rect = tile.rect.move(point)
+                if rect.colliderect(tile_rect):
+                    rects.append(tile_rect)
+        return rects
