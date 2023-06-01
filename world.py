@@ -20,7 +20,7 @@ class World:
         )
 
         self.layer0.append(self.player)
-        for i in range(1):
+        for i in range(10):
             self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
