@@ -75,7 +75,7 @@ class PlayerInputComponent(Component):
         self.can_dash = False
 
     def update(self, game_object: "Player2", world: "World") -> None:
-        if self.dash_timer.tick(world.dt) and not self.can_dash:
+        if not self.can_dash and self.dash_timer.tick(world.dt):
             self.can_dash = True
         self.handle_keys(game_object)
         self.handle_mouse(game_object, world)
@@ -194,8 +194,10 @@ class PhysicsComponent(Component):
         self.apply_force(self.gravity)
         rect = game_object.rect
 
-        if self.grounded:
-            self.apply_force(pg.Vector2(-(math.copysign(2, game_object.vel.x) * game_object.vel.x ** 2), 0))
+        if self.grounded and game_object.vel.x != 0:
+            self.apply_force(pg.Vector2(-(math.copysign(20, game_object.vel.x)), 0))
+            if abs(game_object.vel.x) < 0.01:
+                game_object.vel.x = 0
         if entity_collisions := world.get_entity_collisions(game_object):
             for collision in entity_collisions:
                 dist = pg.Vector2(rect.center).distance_to(collision.center)
@@ -231,6 +233,7 @@ class PhysicsComponent(Component):
                     rect.top = collision.bottom
 
         rect.x += game_object.vel.x * dt
+
         tile_collisions = world.tilemap.get_collisions(rect)
         if tile_collisions:
             for collision in tile_collisions:
@@ -264,7 +267,8 @@ class Player2(GameObject):
 
     def draw(self, world: "World"):
         self.render_component.update(self, world)
-        self.physics_component.debug_draw(self, world)
+        if world.debug_on:
+            self.physics_component.debug_draw(self, world)
 
 
 class SimpleAIComponent(Component):

@@ -4,7 +4,7 @@ from settings import *
 from typing import Optional
 from item import Item
 class ItemStack:
-    def __init__(self, item_data : Optional["Item"]=None, stack_size : int=-1):
+    def __init__(self, item_data : Optional["Item"] =None, stack_size : int=-1):
         self.item_data = item_data
         self.stack_size = stack_size
 
@@ -19,7 +19,7 @@ class ItemStack:
         return self.item_data is None and self.stack_size == -1
 
     def combine(self, other : "ItemStack"):
-        if self.is_empty:
+        if self.item_data is None:
             self.set_data(other.item_data, other.stack_size)
             other.clear()
             return

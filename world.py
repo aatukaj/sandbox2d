@@ -7,13 +7,14 @@ from tiles import Tiles
 from typing import Dict, Tuple
 from customtypes import Coordinate
 import pygame as pg
+import time
 
 
 class World:
-    def __init__(self, surface : pg.Surface):
+    def __init__(self, surface: pg.Surface):
         self.surf = surface
         self.layer0: list[GameObject] = []
-        self.tilemap = Tilemap(500, 200)
+        self.tilemap = Tilemap(5000, 250)
         self.player = Player2(
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
@@ -25,8 +26,10 @@ class World:
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
+        self.debug_on: bool = False
 
     def generate_tiles(self):
+        start_time = time.time()
         seed = random.randint(0, 1 << 64)
         opensimplex.seed(seed)
         random.seed(seed)
@@ -53,8 +56,13 @@ class World:
                     self.tilemap.set_tile((x, y), Tiles.DIRT.value)
                 else:
                     self.tilemap.set_tile((x, y), Tiles.STONE.value)
+                    
+            if x % (self.tilemap.width // 100) == 0:
+                print(f"{round(x / self.tilemap.width * 100)}%")
+                pg.display.flip()
+        print(f"100%\nworldgen done, time:{time.time()-start_time:.2f}s")
 
-    def generate_tree(self, pos : Coordinate, bark_length: int = 2) -> None:
+    def generate_tree(self, pos: Coordinate, bark_length: int = 2) -> None:
         leaf_t = Tiles.LEAF.value
         bark_t = Tiles.WOOD.value
         leafs = [
@@ -81,8 +89,8 @@ class World:
     def get_collision_rects(self, rect: pg.FRect):
         return self.tilemap.get_collisions(rect)
 
-    def get_entity_collisions(self, game_obj : GameObject) -> list[pg.FRect]:
-        collisions : list[pg.FRect]= []
+    def get_entity_collisions(self, game_obj: GameObject) -> list[pg.FRect]:
+        collisions: list[pg.FRect] = []
         for pos in game_obj.get_corner_tile_positions():
             objs = self.collision_dict.get(pos)
             if objs:
@@ -96,11 +104,11 @@ class World:
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
         return (mouse_pos + self.camera) // 1
 
-    def draw_image(self, pos : Coordinate, image : pg.Surface):
+    def draw_image(self, pos: Coordinate, image: pg.Surface):
         self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
 
     def update_collision_dict(self):
-        collision_dict : Dict[Tuple[float, float], list[GameObject]]= {}
+        collision_dict: Dict[Tuple[float, float], list[GameObject]] = {}
         for obj in self.layer0:
             if hasattr(obj, "physics_component"):
                 for i in obj.get_corner_tile_positions():
@@ -110,7 +118,7 @@ class World:
                         collision_dict[i] = [obj]
         self.collision_dict = collision_dict
 
-    def update(self, dt : float):
+    def update(self, dt: float):
         self.update_collision_dict()
         self.dt = dt
         for i in self.layer0:

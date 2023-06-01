@@ -32,7 +32,7 @@ def main():
     hotbar.rect.bottom = HEIGHT - 10
     mouse_item_stack = ItemStack()
     background = win.copy()
-    debug_on = True
+    debug_on = False
 
     def debug_draw():
         player = world.player
@@ -53,7 +53,6 @@ def main():
 
     while True:
         dt = clock.tick() / 1000
-
         # throttle dt
         dt = min(dt, 0.2)
         world.player.equipped_stack = hotbar.items[hotbar.selected_index]
@@ -84,6 +83,7 @@ def main():
                         background = win.copy()
                 if event.key == pg.K_TAB:
                     debug_on = not debug_on
+                    world.debug_on = debug_on
 
                 if event.unicode != "" and event.unicode in "123456789":
                     hotbar.selected_index = int(event.unicode) - 1
