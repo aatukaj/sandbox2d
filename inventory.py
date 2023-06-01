@@ -1,11 +1,10 @@
 import pygame as pg
 import pygame.freetype as ft
-import tiles as t
 from settings import *
-
-
+from typing import Optional
+from item import Item
 class ItemStack:
-    def __init__(self, item_data=None, stack_size=-1):
+    def __init__(self, item_data : Optional["Item"]=None, stack_size : int=-1):
         self.item_data = item_data
         self.stack_size = stack_size
 
@@ -16,13 +15,14 @@ class ItemStack:
 
 
     @property
-    def is_empty(self):
+    def is_empty(self) -> bool:
         return self.item_data is None and self.stack_size == -1
 
-    def combine(self, other):
+    def combine(self, other : "ItemStack"):
         if self.is_empty:
             self.set_data(other.item_data, other.stack_size)
             other.clear()
+            return
 
         elif other.item_data == self.item_data:
             new_stack_size = self.stack_size + other.stack_size
@@ -33,16 +33,16 @@ class ItemStack:
                 self.stack_size += other.stack_size
                 other.clear()
 
-    def remove(self, amount):
+    def remove(self, amount : int):
         self.stack_size -= amount
         if self.stack_size <= 0:
             self.clear()
 
-    def set_data(self, item_data, stack_size):
+    def set_data(self, item_data : Optional[Item], stack_size : int) -> None:
         self.item_data = item_data
         self.stack_size = stack_size
 
-    def draw(self, font, x, y, surf):
+    def draw(self, font : ft.Font, x : float, y : float, surf : pg.Surface):
         if self.item_data is None:
             return
         surf.blit(self.item_data.img, (x, y))
@@ -51,11 +51,11 @@ class ItemStack:
 
 
 class Inventory:
-    def __init__(self, size):
+    def __init__(self, size : int):
         self.size = size
         self.items = [ItemStack() for _ in range(size)]
         
-    def add(self, item_data, stack_size):
+    def add(self, item_data : "Item", stack_size : int):
         add_item_stack = ItemStack(item_data, stack_size)
         for item_stack in self.items:
             item_stack.combine(add_item_stack)
@@ -64,7 +64,7 @@ class Inventory:
 
 
 class InventoryUI:
-    def __init__(self, item_stacks, width, height):
+    def __init__(self, item_stacks : list[ItemStack], width : int, height : int):
         
         self.items = item_stacks
         self.width = width
@@ -90,20 +90,20 @@ class InventoryUI:
         self.item_rects = self.generate_rects()
         self.surface = pg.Surface(self.rect.size)
 
-    def generate_rects(self):
-        item_rects = []
+    def generate_rects(self) -> list[pg.FRect]:
+        item_rects : list[pg.FRect] = []
         for i in range(self.width * self.height):
             x = i % self.width * self.cell_total + self.rect_padding
             y = i // self.width * self.cell_total + self.rect_padding
             item_rects.append(
-                pg.Rect(
+                pg.FRect(
                     x, y, TILE_SIZE + self.cell_padding, TILE_SIZE + self.cell_padding
                 )
             )
 
         return item_rects
     
-    def handle_event(self, event: pg.Event, mouse_item_stack):
+    def handle_event(self, event: pg.Event, mouse_item_stack : ItemStack):
         if (
             event.type != pg.MOUSEBUTTONDOWN
             or event.button != 1
@@ -135,12 +135,11 @@ class InventoryUI:
             if self.selected_index == i:
                 pg.draw.rect(self.surface, "#feae34", rect, width=1)
             item_stack = self.items[i]
-            if item_stack != -1:
-                item_stack.draw(
-                    self.font,
-                    rect.x + self.cell_padding // 2,
-                    rect.y + self.cell_padding // 2,
-                    self.surface,
-                )
+            item_stack.draw(
+                self.font,
+                rect.x + self.cell_padding // 2,
+                rect.y + self.cell_padding // 2,
+                self.surface,
+            )
 
         surf.blit(self.surface, self.rect)

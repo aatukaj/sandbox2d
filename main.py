@@ -1,6 +1,6 @@
 import enum
 import pygame as pg
-import pygame.freetype as ft
+
 
 
 pg.display.init()
@@ -12,7 +12,7 @@ from settings import *
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 print(win)
 from world import World
-from inventory import Inventory, ItemStack, InventoryUI
+from inventory import ItemStack, InventoryUI
 
 
 class State(enum.Enum):
@@ -38,7 +38,7 @@ def main():
         player = world.player
         lines = [
             f"fps={clock.get_fps():.0f}, {dt=}",
-            f"player.pos=[{player.physics_component.rect.x:.2f}, {player.physics_component.rect.y:.2f}]",
+            f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
             f"player.vel=[{player.vel.x:.2f}, {player.vel.y:.2f}]",
             f"player.break_time={player.input_component.break_timer:.2f}",
             f"mouse_tile={world.get_mouse_tile_pos()}",

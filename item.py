@@ -1,10 +1,10 @@
-from settings import TILE_SIZE
+
 from tools import load_img
-import pygame as pg
+
 from functools import cached_property
 import enum
 class Item:
-    def __init__(self, img_path, name, item_type, max_stack=64):
+    def __init__(self, img_path : str, name : str, item_type : "ItemType", max_stack : int=64):
         self.img_path = img_path
         self.name = name
         self.max_stack = max_stack
