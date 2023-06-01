@@ -32,7 +32,9 @@ def main():
     hotbar.rect.bottom = HEIGHT - 10
     mouse_item_stack = ItemStack()
     background = win.copy()
+    
     debug_on = False
+
 
     def debug_draw():
         player = world.player

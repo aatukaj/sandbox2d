@@ -113,7 +113,7 @@ class PlayerInputComponent(Component):
     def right_click(self, world: "World", tile_pos: Coordinate, game_object: "Player2"):
         if game_object.equipped_stack.is_empty:
             return
-        if game_object.equipped_stack.item_data.item_type == ItemType.TILE:
+        elif game_object.equipped_stack.item_data.item_type == ItemType.TILE:
             if not world.collision_dict.get(tuple(tile_pos)):
                 if world.tilemap.set_tile(
                     tile_pos, game_object.equipped_stack.item_data, replace=False
@@ -142,8 +142,6 @@ class PlayerInputComponent(Component):
 
             if mouse[2]:
                 self.right_click(world, tile_pos, game_object)
-        else:
-            self.selected_tile = None
 
         self.prev_tile_pos = tile_pos
 
@@ -194,10 +192,14 @@ class PhysicsComponent(Component):
         self.apply_force(self.gravity)
         rect = game_object.rect
 
-        if self.grounded and game_object.vel.x != 0:
-            self.apply_force(pg.Vector2(-(math.copysign(20, game_object.vel.x)), 0))
-            if abs(game_object.vel.x) < 0.01:
-                game_object.vel.x = 0
+        fric = 1
+        if self.grounded: 
+            fric = 20
+
+        if game_object.vel.x != 0:
+            self.apply_force(pg.Vector2(-(math.copysign(fric, game_object.vel.x)), 0))
+        if abs(game_object.vel.x) < 0.1:
+            game_object.vel.x = 0
         if entity_collisions := world.get_entity_collisions(game_object):
             for collision in entity_collisions:
                 dist = pg.Vector2(rect.center).distance_to(collision.center)
@@ -339,5 +341,5 @@ class TileOverlay(GameObject):
             if world.player.input_component.break_timer > 0:
                 timer = world.player.input_component.break_timer
                 if tile := world.tilemap.get_tile(pos):
-                    cur_sprite = self.breaking_sprites[int(timer / tile.break_time * 4)]
+                    cur_sprite = self.breaking_sprites[min(int(timer / tile.break_time * 4), 3)]
                     world.draw_image(pos, cur_sprite)

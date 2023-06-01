@@ -21,7 +21,7 @@ class World:
         )
 
         self.layer0.append(self.player)
-        for i in range(10):
+        for i in range(300):
             self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i))))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
@@ -99,14 +99,7 @@ class World:
                         if game_obj.rect.colliderect(obj.rect):
                             collisions.append(obj.rect)
         return collisions
-
-    def get_mouse_tile_pos(self):
-        mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
-        return (mouse_pos + self.camera) // 1
-
-    def draw_image(self, pos: Coordinate, image: pg.Surface):
-        self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
-
+    
     def update_collision_dict(self):
         collision_dict: Dict[Tuple[float, float], list[GameObject]] = {}
         for obj in self.layer0:
@@ -117,6 +110,15 @@ class World:
                     else:
                         collision_dict[i] = [obj]
         self.collision_dict = collision_dict
+
+    def get_mouse_tile_pos(self):
+        mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
+        return (mouse_pos + self.camera) // 1
+
+    def draw_image(self, pos: Coordinate, image: pg.Surface):
+        self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
+
+    
 
     def update(self, dt: float):
         self.update_collision_dict()
