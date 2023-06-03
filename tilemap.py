@@ -31,6 +31,7 @@ class Tilemap:
         )
 
     def is_inside(self, pos: Coordinate) -> bool:
+
         return (0 <= pos[0] < self.width) and (0 <= pos[1] < self.height)
 
     def is_tile_collidable(self, pos: Coordinate):

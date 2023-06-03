@@ -6,9 +6,10 @@ from inventory import Inventory
 from tools import load_img, Timer, get_img_dimensions
 import abc
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 from customtypes import Coordinate
 import random
+from particle import Particle
 
 if TYPE_CHECKING:
     from world import World
@@ -77,27 +78,30 @@ class PlayerInputComponent(Component):
     def update(self, game_object: "Player2", world: "World") -> None:
         if not self.can_dash and self.dash_timer.tick(world.dt):
             self.can_dash = True
-        self.handle_keys(game_object)
+        self.handle_keys(game_object, world)
         self.handle_mouse(game_object, world)
 
-    def handle_keys(self, game_object: "Player2"):
+    def handle_keys(self, game_object: "Player2", world: "World"):
         keys = pg.key.get_pressed()
 
         if keys[pg.K_d]:
-            if game_object.vel.x <= 5:
-                game_object.physics_component.apply_force(pg.Vector2(50, 0))
+            game_object.physics_component.apply_force_target(
+                pg.Vector2(50, 0), pg.Vector2(5, 0)
+            )
 
         if keys[pg.K_a]:
             if game_object.vel.x >= -5:
-                game_object.physics_component.apply_force(pg.Vector2(-50, 0))
+                game_object.physics_component.apply_force_target(
+                    pg.Vector2(-50, 0), pg.Vector2(-5, 0)
+                )
 
         if keys[pg.K_e] and self.can_dash:
             self.can_dash = False
-            game_object.physics_component.apply_impulse(pg.Vector2(10, 0))
+
+            self.dash(game_object, world, pg.Vector2(10, 0))
 
         if keys[pg.K_q] and self.can_dash:
-            self.can_dash = False
-            game_object.physics_component.apply_impulse(pg.Vector2(-10, 0))
+            self.dash(game_object, world, pg.Vector2(-10, 0))
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
             game_object.physics_component.apply_impulse(pg.Vector2(0, -13))
@@ -109,6 +113,25 @@ class PlayerInputComponent(Component):
             if keys[pg.K_w]:
                 speed_y -= 3
             game_object.vel.y = speed_y
+
+    def dash(self, game_object: "Player2", world: "World", vec: pg.Vector2):
+        self.can_dash = False
+        game_object.physics_component.apply_impulse(vec)
+        vec = pg.Vector2(-game_object.vel.x - vec.x, -game_object.vel.y / 2).normalize() * 5
+
+        world.pm.add(
+            [
+                Particle(
+                    0.5,
+                    game_object.center
+                    + pg.Vector2(random.uniform(-0.2, 0.2), random.uniform(-0.2, 0.2)),
+                    (vec + pg.Vector2(0, i / 4 - 5)).normalize() * 10 + pg.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)).normalize() * 2,
+                    6,
+                    (255, 255, 255),
+                )
+                for i in range(40)
+            ]
+        )
 
     def right_click(self, world: "World", tile_pos: Coordinate, game_object: "Player2"):
         if game_object.equipped_stack.is_empty:
@@ -152,11 +175,15 @@ class PhysicsComponent(Component):
         self.flying = False
         self.gravity = pg.Vector2(0, 20)
         self.forces: list[pg.Vector2] = []
+        self.target_forces: list[tuple(pg.Vector2, pg.Vector2)] = []
         self.impulses: list[pg.Vector2] = []
         self.last_forces: list[pg.Vector2] = []
 
     def apply_force(self, vec: pg.Vector2):
         self.forces.append(vec)
+
+    def apply_force_target(self, vec: pg.Vector2, target: pg.Vector2):
+        self.target_forces.append((vec, target))
 
     def apply_impulse(self, vec: pg.Vector2):
         self.impulses.append(vec)
@@ -164,7 +191,7 @@ class PhysicsComponent(Component):
     def debug_draw(self, game_object: GameObject, world: "World"):
         center = (game_object.center - world.camera) * TILE_SIZE
         for vec in self.last_forces:
-            if vec.length_squared() == 0.:
+            if vec.length_squared() == 0.0:
                 continue
             direction = vec.normalize()
             pg.draw.line(
@@ -188,36 +215,69 @@ class PhysicsComponent(Component):
             center + game_object.vel * 4,
         )
 
-    def update(self, game_object: GameObject, world: "World"):
-        self.apply_force(self.gravity)
-        rect = game_object.rect
+    def handle_force_target(self, game_object, force, target, dt):
+        if game_object.vel.x == target.x:
+            return
+        new_vel = game_object.vel + force * dt
 
+        if force.x > 0:
+            if game_object.vel.x < target.x and new_vel.x > target.x:
+                dif = target.x - game_object.vel.x
+
+                self.apply_force(pg.Vector2(dif / dt, 0))
+
+            elif new_vel.x < target.x:
+                self.apply_force(force)
+        if force.x < 0:
+            if game_object.vel.x > target.x and new_vel.x < target.x:
+                dif = target.x - game_object.vel.x
+                self.apply_force(pg.Vector2(dif / dt, 0))
+            elif new_vel.x > target.x:
+                self.apply_force(force)
+
+    def apply_friction(self, game_object):
         fric = 1
-        if self.grounded: 
+        if self.grounded:
             fric = 20
 
-        if game_object.vel.x != 0:
-            self.apply_force(pg.Vector2(-(math.copysign(fric, game_object.vel.x)), 0))
-        if abs(game_object.vel.x) < 0.1:
-            game_object.vel.x = 0
+        self.apply_force_target(
+            pg.Vector2(-(math.copysign(fric, game_object.vel.x)), 0), pg.Vector2(0, 0)
+        )
+
+    def push_away_from_collision(self, rect, collision):
+        dist = pg.Vector2(rect.center).distance_to(collision.center)
+
+        if dist != 0:
+            dif = pg.Vector2(rect.center) - pg.Vector2(collision.center)
+            direction = dif.normalize()
+        else:
+            direction = pg.Vector2(random.random(), random.random()).normalize()
+        self.apply_force(direction.elementwise() * pg.Vector2(40, 10))
+
+    def update(self, game_object: GameObject, world: "World"):
+        rect = game_object.rect
+        dt = world.dt
+        self.gravity = world.gravity
+
+        self.apply_force(self.gravity)
+        self.apply_friction(game_object)
+
         if entity_collisions := world.get_entity_collisions(game_object):
             for collision in entity_collisions:
-                dist = pg.Vector2(rect.center).distance_to(collision.center)
+                self.push_away_from_collision(rect, collision)
 
-                if dist != 0:
-                    direction = (
-                        pg.Vector2(rect.center) - pg.Vector2(collision.center)
-                    ).normalize()
-                    self.apply_force(direction.elementwise() * pg.Vector2(40, 10))
+        for force, target in self.target_forces:
+            self.handle_force_target(game_object, force, target, dt)
 
-        dt = world.dt
         for force in self.forces:
             game_object.vel += force * dt
         for impulse in self.impulses:
             game_object.vel += impulse
+
         self.last_forces = self.forces
         self.forces = []
         self.impulses = []
+        self.target_forces = []
 
         rect.y += game_object.vel.y * dt
         tile_collisions = world.tilemap.get_collisions(rect)
@@ -279,8 +339,9 @@ class SimpleAIComponent(Component):
         self.speed_x = 0
 
     def update(self, game_object: GameObject, world: "World"):
-        if abs(game_object.vel.x) <= abs(self.speed_x):
-            game_object.physics_component.apply_force(pg.Vector2(self.speed_x * 10, 0))
+        game_object.physics_component.apply_force_target(
+            pg.Vector2(self.speed_x * 10, 0), pg.Vector2(self.speed_x, 0)
+        )
 
         if not self.update_timer.tick(world.dt):
             return
@@ -341,5 +402,7 @@ class TileOverlay(GameObject):
             if world.player.input_component.break_timer > 0:
                 timer = world.player.input_component.break_timer
                 if tile := world.tilemap.get_tile(pos):
-                    cur_sprite = self.breaking_sprites[min(int(timer / tile.break_time * 4), 3)]
+                    cur_sprite = self.breaking_sprites[
+                        min(int(timer / tile.break_time * 4), 3)
+                    ]
                     world.draw_image(pos, cur_sprite)

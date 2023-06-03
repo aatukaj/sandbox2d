@@ -2,9 +2,7 @@ import enum
 import pygame as pg
 
 
-
 pg.display.init()
-
 
 
 from settings import *
@@ -32,31 +30,36 @@ def main():
     hotbar.rect.bottom = HEIGHT - 10
     mouse_item_stack = ItemStack()
     background = win.copy()
-    
-    debug_on = False
 
+    debug_on = False
 
     def debug_draw():
         player = world.player
-        lines = [
-            f"fps={clock.get_fps():.0f}, {dt=}",
-            f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]",
-            f"player.vel=[{player.vel.x:.2f}, {player.vel.y:.2f}]",
-            f"player.break_time={player.input_component.break_timer:.2f}",
-            f"mouse_tile={world.get_mouse_tile_pos()}",
-        ]
+        lines = []
+        try:
+            lines.append(f"fps={clock.get_fps():.0f}, {dt=}")
+            lines.append(f"player.pos=[{player.rect.x:.2f}, {player.rect.y:.2f}]")
+            lines.append(f"player.vel=[{player.vel.x:.2f}, {player.vel.y:.2f}]")
+            lines.append(f"player.break_time={player.input_component.break_timer:.2f}")
+            lines.append(f"mouse_tile={world.get_mouse_tile_pos()}")
+            lines.append(f"paritcles={len(world.pm.particles)}")
+            
+        except Exception as e:
+            lines.append(str(e))
         bg = pg.Surface((170, 80), pg.SRCALPHA)
         bg.fill((0, 0, 0, 125))
         win.blit(bg, (0, 0))
         y = 1
+
         for line in lines:
             font.render_to(win, (1, y), line, (255, 255, 255))
             y += 10
 
     while True:
-        dt = clock.tick() / 1000
+        dt = clock.tick(144) / 1000
         # throttle dt
         dt = min(dt, 0.2)
+
         world.player.equipped_stack = hotbar.items[hotbar.selected_index]
         if state == State.GAME:
             world.update(dt)
