@@ -1,7 +1,6 @@
 import enum
 import pygame as pg
-
-
+pg.mixer.init()
 pg.display.init()
 
 
@@ -22,7 +21,6 @@ def main():
     state = State.GAME
     clock = pg.Clock()
     world = World(win)
-    # font = ft.Font("textures/scientifica/bdf/scientifica-11.bdf")
 
     inventory = InventoryUI(world.player.inventory.items[: 9 * 4], 9, 4)
     hotbar = InventoryUI(world.player.inventory.items[-9:], 9, 1)
@@ -33,7 +31,7 @@ def main():
 
     debug_on = False
 
-    def debug_draw():
+    def debug_draw():             
         player = world.player
         lines = []
         try:
@@ -56,7 +54,7 @@ def main():
             y += 10
 
     while True:
-        dt = clock.tick(144) / 1000
+        dt = clock.tick() / 1000
         # throttle dt
         dt = min(dt, 0.2)
 

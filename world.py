@@ -3,18 +3,20 @@ from tilemap import Tilemap
 from player import Player2, TileOverlay, Enemy1, GameObject
 import opensimplex
 from settings import *
-from tiles import Tiles
+from tiles import Tiles, Water
 from typing import Dict, Tuple
 from customtypes import Coordinate
 import pygame as pg
 import time
 from particle import ParticleManager, Particle
+from event import subscribe
+
 
 class World:
     def __init__(self, surface: pg.Surface):
         self.surf = surface
         self.layer0: list[GameObject] = []
-        self.tilemap = Tilemap(5000, 250)
+        self.tilemap = Tilemap(5000, 500)
         self.player = Player2(
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
@@ -28,7 +30,53 @@ class World:
         self.generate_tiles()
         self.debug_on: bool = False
         self.pm = ParticleManager()
- 
+        self.sounds = {}
+        subscribe("player_jump", self.play_sound("jump (1).wav"))
+        subscribe("player_dash", self.play_sound("jump.wav"))
+        subscribe("player_dash", self.dash_particles)
+        subscribe("player_grounded", self.play_sound("hitHurt.wav"))
+
+    def dash_particles(self, data):
+        game_object = data["game_object"]
+        vec = data["vec"]
+        vec = (
+            pg.Vector2(
+                -game_object.vel.x - vec.x, -game_object.vel.y / 2
+            ).normalize()
+            * 5
+        )
+        self.pm.add(
+            [
+                Particle(
+                    0.5,
+                    game_object.center
+                    + pg.Vector2(
+                        random.uniform(-0.1, 0.1), random.uniform(-0.2, 0.2)
+                    ),
+                    (vec + pg.Vector2(0, i / 8 - 2)).normalize() * 10
+                    + pg.Vector2(
+                        random.uniform(-1, 1), random.uniform(-1, 1)
+                    ).normalize()
+                    * 2,
+                    6,
+                    (255, 255, 255),
+                )
+                for i in range(40)
+            ]
+        )
+
+    def get_sound(self, name: str):
+        if not name in self.sounds:
+            self.sounds[name] = pg.mixer.Sound("sounds/" + name)
+            self.sounds[name].set_volume(0.5)
+        return self.sounds[name]
+
+    def play_sound(self, name: str):
+        def fn(*args):
+            self.get_sound(name).play()
+
+        return fn
+
     def generate_tiles(self):
         start_time = time.time()
         seed = random.randint(0, 1 << 64)
@@ -39,7 +87,7 @@ class World:
         for x in range(self.tilemap.width):
             ground_y = int(opensimplex.noise2(x / 15, 0) * 8) + base_ground_y
             stone_offset = int(opensimplex.noise2(x / 20, 2) * 5)
-            self.tilemap.set_tile((x, ground_y), Tiles.GRASS.value)
+            self.tilemap.set_tile((x, ground_y), Tiles.GRASS)
 
             if last_tree + 1 < x and random.random() > 0.95:
                 last_tree = x
@@ -49,14 +97,16 @@ class World:
                 )
             if random.random() > 0.7:
                 self.tilemap.set_tile(
-                    (x, ground_y - 1), Tiles.GRASS_PLANT.value, replace=False
+                    (x, ground_y - 1), Tiles.GRASS_PLANT, replace=False
                 )
+            # for water_y in range(base_ground_y, ground_y - 2, 1):
+            # self.tilemap.set_tile((x, water_y), Tiles.WATER, False)
 
             for y in range(ground_y + 1, self.tilemap.height):
                 if y < ground_y + 6 + stone_offset:
-                    self.tilemap.set_tile((x, y), Tiles.DIRT.value)
+                    self.tilemap.set_tile((x, y), Tiles.DIRT)
                 else:
-                    self.tilemap.set_tile((x, y), Tiles.STONE.value)
+                    self.tilemap.set_tile((x, y), Tiles.STONE)
 
             if x % (self.tilemap.width // 100) == 0:
                 print(f"{round(x / self.tilemap.width * 100)}%")
@@ -64,8 +114,8 @@ class World:
         print(f"100%\nworldgen done, time:{time.time()-start_time:.2f}s")
 
     def generate_tree(self, pos: Coordinate, bark_length: int = 2) -> None:
-        leaf_t = Tiles.LEAF.value
-        bark_t = Tiles.WOOD.value
+        leaf_t = Tiles.LEAF
+        bark_t = Tiles.WOOD
         leafs = [
             [None, leaf_t, leaf_t, leaf_t, None],
             [leaf_t, leaf_t, leaf_t, leaf_t, leaf_t],
@@ -121,8 +171,10 @@ class World:
         self.surf.blit(image, (pos - self.camera) * TILE_SIZE)
 
     def update(self, dt: float):
-        self.update_collision_dict()
         self.dt = dt
+        self.update_collision_dict()
+        self.tilemap.update(self)
+
         self.pm.update(self)
         for i in self.layer0:
             i.update(self)

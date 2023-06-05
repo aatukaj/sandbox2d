@@ -1,7 +1,6 @@
 import pygame as pg
 from settings import TILE_SIZE
 from tiles import Tiles as t
-from item import ItemType
 from inventory import Inventory
 from tools import load_img, Timer, get_img_dimensions
 import abc
@@ -10,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from customtypes import Coordinate
 import random
 from particle import Particle
+from event import post_event
 
 if TYPE_CHECKING:
     from world import World
@@ -74,6 +74,8 @@ class PlayerInputComponent(Component):
         self.reach = 5
         self.dash_timer = Timer(1)
         self.can_dash = False
+        self.prev_tile_pos = None
+
 
     def update(self, game_object: "Player2", world: "World") -> None:
         if not self.can_dash and self.dash_timer.tick(world.dt):
@@ -90,14 +92,11 @@ class PlayerInputComponent(Component):
             )
 
         if keys[pg.K_a]:
-            if game_object.vel.x >= -5:
-                game_object.physics_component.apply_force_target(
-                    pg.Vector2(-50, 0), pg.Vector2(-5, 0)
-                )
+            game_object.physics_component.apply_force_target(
+                pg.Vector2(-50, 0), pg.Vector2(-5, 0)
+            )
 
         if keys[pg.K_e] and self.can_dash:
-            self.can_dash = False
-
             self.dash(game_object, world, pg.Vector2(10, 0))
 
         if keys[pg.K_q] and self.can_dash:
@@ -105,7 +104,8 @@ class PlayerInputComponent(Component):
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
             game_object.physics_component.apply_impulse(pg.Vector2(0, -13))
-
+            post_event("player_jump", game_object)
+            
         if game_object.physics_component.flying:
             speed_y = 0
             if keys[pg.K_s]:
@@ -117,39 +117,19 @@ class PlayerInputComponent(Component):
     def dash(self, game_object: "Player2", world: "World", vec: pg.Vector2):
         self.can_dash = False
         game_object.physics_component.apply_impulse(vec)
-        vec = pg.Vector2(-game_object.vel.x - vec.x, -game_object.vel.y / 2).normalize() * 5
+        post_event("player_dash", {"game_object": game_object, "vec": vec})
 
-        world.pm.add(
-            [
-                Particle(
-                    0.5,
-                    game_object.center
-                    + pg.Vector2(random.uniform(-0.2, 0.2), random.uniform(-0.2, 0.2)),
-                    (vec + pg.Vector2(0, i / 4 - 5)).normalize() * 10 + pg.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)).normalize() * 2,
-                    6,
-                    (255, 255, 255),
-                )
-                for i in range(40)
-            ]
-        )
+       
 
-    def right_click(self, world: "World", tile_pos: Coordinate, game_object: "Player2"):
-        if game_object.equipped_stack.is_empty:
-            return
-        elif game_object.equipped_stack.item_data.item_type == ItemType.TILE:
-            if not world.collision_dict.get(tuple(tile_pos)):
-                if world.tilemap.set_tile(
-                    tile_pos, game_object.equipped_stack.item_data, replace=False
-                ):
-                    game_object.equipped_stack.remove(1)
+    def right_click(self, world: "World", game_object: "Player2"):
+        game_object.equipped_stack.right_click(world, game_object)
 
-    def handle_mouse(self, game_object: "Player2", world: "World"):
-        mouse = pg.mouse.get_pressed()
+
+    def left_click(self, world: "World", game_object: "Player2"):
         tile_pos = world.get_mouse_tile_pos()
-
         if game_object.pos.distance_to(tile_pos) <= self.reach:
             tile = world.tilemap.get_tile(tile_pos)
-            if mouse[0] and tile is not None:
+            if tile is not None:
                 self.break_timer += world.dt
                 if self.prev_tile_pos != tile_pos:
                     self.break_timer = 0
@@ -162,11 +142,17 @@ class PlayerInputComponent(Component):
 
             else:
                 self.break_timer = 0
-
-            if mouse[2]:
-                self.right_click(world, tile_pos, game_object)
-
         self.prev_tile_pos = tile_pos
+            
+
+    def handle_mouse(self, game_object: "Player2", world: "World"):
+        mouse = pg.mouse.get_pressed()
+        if mouse[0]: 
+            self.left_click(world, game_object)
+        if mouse[2]:
+            self.right_click(world, game_object)
+
+        
 
 
 class PhysicsComponent(Component):
@@ -245,14 +231,15 @@ class PhysicsComponent(Component):
         )
 
     def push_away_from_collision(self, rect, collision):
-        dist = pg.Vector2(rect.center).distance_to(collision.center)
+        c1 = pg.Vector2(rect.center)
+        c2 = pg.Vector2(collision.center)
+        dif = c1 - c2
 
-        if dist != 0:
-            dif = pg.Vector2(rect.center) - pg.Vector2(collision.center)
+        if dif != pg.Vector2(0, 0):
             direction = dif.normalize()
         else:
             direction = pg.Vector2(random.random(), random.random()).normalize()
-        self.apply_force(direction.elementwise() * pg.Vector2(40, 10))
+        self.apply_force(direction.elementwise() * pg.Vector2(80, 20))
 
     def update(self, game_object: GameObject, world: "World"):
         rect = game_object.rect
@@ -280,7 +267,8 @@ class PhysicsComponent(Component):
         self.target_forces = []
 
         rect.y += game_object.vel.y * dt
-        tile_collisions = world.tilemap.get_collisions(rect)
+        tile_collisions = world.tilemap.get_collisions(game_object)
+        self.last_grounded = self.grounded
         self.grounded = False
 
         if tile_collisions:
@@ -289,14 +277,15 @@ class PhysicsComponent(Component):
                     game_object.vel.y = 0
                     self.grounded = True
                     rect.bottom = collision.top
-
+                    if not self.last_grounded and isinstance(game_object, Player2):
+                        post_event("player_grounded", game_object)
                 if game_object.vel.y < 0:
                     game_object.vel.y = 0
                     rect.top = collision.bottom
 
         rect.x += game_object.vel.x * dt
 
-        tile_collisions = world.tilemap.get_collisions(rect)
+        tile_collisions = world.tilemap.get_collisions(game_object)
         if tile_collisions:
             for collision in tile_collisions:
                 if game_object.vel.x > 0:
@@ -316,8 +305,8 @@ class Player2(GameObject):
 
         self.inventory = Inventory(9 * 5)
         self.equipped_stack: ItemStack
-        for i, tile in enumerate(t):
-            self.inventory.items[i].set_data(tile.value, 999)
+
+        self.inventory.items[0].set_data(t.DIRT, 999)
 
         self.input_component = PlayerInputComponent()
         self.physics_component = PhysicsComponent()
