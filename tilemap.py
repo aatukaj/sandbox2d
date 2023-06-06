@@ -5,9 +5,12 @@ from typing import Union, Optional, TYPE_CHECKING
 from customtypes import Coordinate
 from inspect import isclass
 from tools import Timer
+
 if TYPE_CHECKING:
     from world import World
     from player import GameObject
+
+
 class Tilemap:
     def __init__(self, width: int, height: int):
         self.tiles: list[list[Optional["Tile"]]] = [
@@ -22,8 +25,8 @@ class Tilemap:
         # cords for clipping
         y_start = max(0, int(-camera.y))
         x_start = max(0, int(-camera.x))
-        y_end = min(self.height - 1, int((-camera.y + HEIGHT / TILE_SIZE) + 1))
-        x_end = min(self.width - 1, int((-camera.x + WIDTH / TILE_SIZE) + 1))
+        y_end = min(self.height, int((-camera.y + HEIGHT / TILE_SIZE) + 1))
+        x_end = min(self.width, int((-camera.x + WIDTH / TILE_SIZE) + 1))
 
         # love list comprehension
         surf.fblits(
@@ -52,7 +55,7 @@ class Tilemap:
             return False
         if not self.is_inside(pos):
             return False
-        
+
         if isclass(val) and issubclass(Water, val):
             val = val()
             self.tile_entities.append(val)
@@ -61,9 +64,10 @@ class Tilemap:
         self.tiles[int(pos[1])][int(pos[0])] = val
         return True
 
-
     def get_tile(self, pos: Coordinate) -> Union[Tile, None]:
-        return self.tiles[int(pos[1])][int(pos[0])]
+        x = pg.math.clamp(pos[0], 0, self.width - 1)
+        y = pg.math.clamp(pos[1], 0, self.height - 1)
+        return self.tiles[int(y)][int(x)]
 
     def set_tiles(
         self, pos: Coordinate, vals: list[list[Optional[Tile]]], replace: bool = True
@@ -75,7 +79,7 @@ class Tilemap:
     def get_tile_coords(self, pos: Coordinate):
         tile_coords = pos
         return tile_coords if self.is_inside(tile_coords) else False
-    
+
     def update(self, world: "World"):
         if self.tile_entity_timer.tick(world.dt):
             for ent in self.tile_entities:

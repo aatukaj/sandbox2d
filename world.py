@@ -10,7 +10,7 @@ import pygame as pg
 import time
 from particle import ParticleManager, Particle
 from event import subscribe
-
+from lights import Light, LightManager
 
 class World:
     def __init__(self, surface: pg.Surface):
@@ -21,28 +21,41 @@ class World:
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
         )
-        self.gravity = pg.Vector2(0, 20)
+        self.gravity = pg.Vector2(0, 15)
         self.layer0.append(self.player)
-        for i in range(100):
-            self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i))))
+        self.lm = LightManager()
+        self.cam_light = Light(75, self.player.pos, (200, 200, 200))
+        for i in range(20):
+            self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i)), self))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
         self.generate_tiles()
         self.debug_on: bool = False
         self.pm = ParticleManager()
+        
         self.sounds = {}
-        subscribe("player_jump", self.play_sound("jump (1).wav"))
-        subscribe("player_dash", self.play_sound("jump.wav"))
+        self.background = self.generate_background(0.001)
+        self.background2 = self.generate_background(0.002)
+        self.background3 = self.generate_background(0.003)
+
+        subscribe("player_jump", self.play_sound_fn("jump (1).wav"))
+        subscribe("player_dash", self.play_sound_fn("jump.wav"))
         subscribe("player_dash", self.dash_particles)
-        subscribe("player_grounded", self.play_sound("hitHurt.wav"))
+        subscribe("player_grounded", self.play_sound_fn("hitHurt.wav"))
+
+    def generate_background(self, chance):
+        background = pg.Surface(self.surf.get_size(), pg.SRCALPHA)
+        for x in range(WIDTH):
+            for y in range(HEIGHT):
+                if random.random() < chance:
+                    pg.draw.rect(background, (255, 255, 255), (x, y, 1, 1))
+        return background
 
     def dash_particles(self, data):
         game_object = data["game_object"]
         vec = data["vec"]
         vec = (
-            pg.Vector2(
-                -game_object.vel.x - vec.x, -game_object.vel.y / 2
-            ).normalize()
+            pg.Vector2(-game_object.vel.x - vec.x, -game_object.vel.y / 2).normalize()
             * 5
         )
         self.pm.add(
@@ -50,9 +63,7 @@ class World:
                 Particle(
                     0.5,
                     game_object.center
-                    + pg.Vector2(
-                        random.uniform(-0.1, 0.1), random.uniform(-0.2, 0.2)
-                    ),
+                    + pg.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.2, 0.2)),
                     (vec + pg.Vector2(0, i / 8 - 2)).normalize() * 10
                     + pg.Vector2(
                         random.uniform(-1, 1), random.uniform(-1, 1)
@@ -71,7 +82,7 @@ class World:
             self.sounds[name].set_volume(0.5)
         return self.sounds[name]
 
-    def play_sound(self, name: str):
+    def play_sound_fn(self, name: str):
         def fn(*args):
             self.get_sound(name).play()
 
@@ -103,7 +114,7 @@ class World:
             # self.tilemap.set_tile((x, water_y), Tiles.WATER, False)
 
             for y in range(ground_y + 1, self.tilemap.height):
-                if y < ground_y + 6 + stone_offset:
+                if y < ground_y + 4 + stone_offset:
                     self.tilemap.set_tile((x, y), Tiles.DIRT)
                 else:
                     self.tilemap.set_tile((x, y), Tiles.STONE)
@@ -129,14 +140,25 @@ class World:
         )
 
     def draw(self):
-        self.surf.fill("#79A6FF")
         self.camera.xy = (pg.Vector2(self.player.rect.center)) - pg.Vector2(
             WIDTH, HEIGHT
-        ) // (2 * TILE_SIZE)
+        ) / (2 * TILE_SIZE)
+        self.cam_light.pos = self.player.center
+        self.surf.fill("#10121E")
+
+
+        for pos in [pg.Vector2(0, 0), pg.Vector2(0, HEIGHT), pg.Vector2(WIDTH,0), pg.Vector2(WIDTH, HEIGHT)]:
+            self.surf.blit(self.background, (-self.camera * TILE_SIZE * 0.4).elementwise() % pg.Vector2(WIDTH, HEIGHT) - pos)
+            self.surf.blit(self.background2, (-self.camera * TILE_SIZE * 0.5).elementwise() % pg.Vector2(WIDTH, HEIGHT) - pos)
+            self.surf.blit(self.background3, (-self.camera * TILE_SIZE * 0.6).elementwise() % pg.Vector2(WIDTH, HEIGHT) - pos)
+
+
+
         self.tilemap.draw(self.surf, -self.camera)
         for i in self.layer0:
             i.draw(self)
         self.pm.draw(self)
+        self.lm.draw(self)
 
     def get_collision_rects(self, rect: pg.FRect):
         return self.tilemap.get_collisions(rect)

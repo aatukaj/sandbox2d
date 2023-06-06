@@ -16,9 +16,8 @@ class Timer:
         self.duration = duration
 
     def tick(self, dt : float) -> bool:
+        self.time = self.time % self.duration
         self.time += dt
         if self.time >= self.duration:
-            self.time = self.time % self.duration
             return True
         return False
-    

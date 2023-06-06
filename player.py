@@ -8,9 +8,8 @@ import math
 from typing import TYPE_CHECKING, Any, Optional
 from customtypes import Coordinate
 import random
-from particle import Particle
 from event import post_event
-
+from lights import Light
 if TYPE_CHECKING:
     from world import World
     from inventory import ItemStack
@@ -103,8 +102,7 @@ class PlayerInputComponent(Component):
             self.dash(game_object, world, pg.Vector2(-10, 0))
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
-            game_object.physics_component.apply_impulse(pg.Vector2(0, -13))
-            post_event("player_jump", game_object)
+            self.jump(game_object)
             
         if game_object.physics_component.flying:
             speed_y = 0
@@ -119,7 +117,9 @@ class PlayerInputComponent(Component):
         game_object.physics_component.apply_impulse(vec)
         post_event("player_dash", {"game_object": game_object, "vec": vec})
 
-       
+    def jump(self, game_object):   
+        game_object.physics_component.apply_impulse(pg.Vector2(0, -13))
+        post_event("player_jump", game_object)
 
     def right_click(self, world: "World", game_object: "Player2"):
         game_object.equipped_stack.right_click(world, game_object)
@@ -127,21 +127,26 @@ class PlayerInputComponent(Component):
 
     def left_click(self, world: "World", game_object: "Player2"):
         tile_pos = world.get_mouse_tile_pos()
-        if game_object.pos.distance_to(tile_pos) <= self.reach:
-            tile = world.tilemap.get_tile(tile_pos)
-            if tile is not None:
-                self.break_timer += world.dt
-                if self.prev_tile_pos != tile_pos:
-                    self.break_timer = 0
+        if game_object.pos.distance_to(tile_pos) > self.reach:
+            return 
+        tile = world.tilemap.get_tile(tile_pos)
 
-                if self.break_timer >= tile.break_time:
-                    game_object.inventory.add(world.tilemap.get_tile(tile_pos), 1)
-                    world.tilemap.set_tile(tile_pos, None)
 
-                    self.break_timer = 0
 
-            else:
-                self.break_timer = 0
+        if tile is None:
+            self.break_timer = 0
+            return
+        
+        self.break_timer += world.dt
+        if self.prev_tile_pos != tile_pos:
+            self.break_timer = 0
+
+        if self.break_timer >= tile.break_time:
+            game_object.inventory.add(world.tilemap.get_tile(tile_pos), 1)
+            world.tilemap.set_tile(tile_pos, None)
+
+            self.break_timer = 0
+            
         self.prev_tile_pos = tile_pos
             
 
@@ -149,6 +154,8 @@ class PlayerInputComponent(Component):
         mouse = pg.mouse.get_pressed()
         if mouse[0]: 
             self.left_click(world, game_object)
+        else:
+            self.break_timer = 0
         if mouse[2]:
             self.right_click(world, game_object)
 
@@ -305,7 +312,8 @@ class Player2(GameObject):
 
         self.inventory = Inventory(9 * 5)
         self.equipped_stack: ItemStack
-
+        self.max_health = 100
+        self.health = self.max_health
         self.inventory.items[0].set_data(t.DIRT, 999)
 
         self.input_component = PlayerInputComponent()
@@ -353,18 +361,20 @@ class SimpleAIComponent(Component):
 
 
 class Enemy1(GameObject):
-    def __init__(self, x, y):
+    def __init__(self, x, y, world):
         self.image = pg.Surface((TILE_SIZE - 3, TILE_SIZE - 3))
-        self.image.fill((255 * random.random(), 0, 0))
+        color = (255 * random.random(), 0, 0)
+        self.image.fill(color)
         super().__init__(x, y, *get_img_dimensions(self.image))
         self.input_component = SimpleAIComponent()
         self.physics_component = PhysicsComponent()
         self.render_component = SimpleRenderer(self.image)
+        self.light = Light(50, self.center, (255, 0, 0))
 
     def update(self, world: "World"):
         self.input_component.update(self, world)
         self.physics_component.update(self, world)
-
+        self.light.pos = self.center
     def draw(self, world: "World"):
         self.render_component.update(self, world)
 

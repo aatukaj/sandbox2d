@@ -143,3 +143,21 @@ class InventoryUI:
             )
 
         surf.blit(self.surface, self.rect)
+
+class UIBar:
+    def __init__(self, max_value: int, value, rect: pg.FRect):
+        self.max_value = max_value
+        self.value = value
+        self.rect = rect
+        self.surface = pg.Surface(self.rect.size)
+        
+    def draw(self, surf: pg.Surface):
+        self.surface.fill("#181425")
+
+        pg.draw.rect(self.surface, "#262b44", ((0, 0), self.rect.size), width=1)
+        pg.draw.rect(self.surface, "#262b44", ((3, 3), ((self.rect.size[0] - 6), self.rect.size[1] - 6)))
+
+        pg.draw.rect(self.surface, "#c0cbdc", ((3, 3), ((self.rect.size[0] - 6) * (self.value/ self.max_value), self.rect.size[1] - 6)))
+        surf.blit(self.surface, self.rect)
+    def handle_event(self, *args):
+        pass

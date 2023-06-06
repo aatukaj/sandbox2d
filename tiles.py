@@ -140,9 +140,9 @@ class Water(Tile):
 
 class Tiles:
     DIRT = Tile("textures/1.png", "Dirt", break_time=0.5)
-    GRASS = Tile("textures/2.png", "Grass", break_time=0.5)
+    GRASS = Tile("textures/7.png", "Grass", break_time=0.5)
     STONE = Tile("textures/3.png", "Stone")
-    GRASS_PLANT = Tile("textures/4.png", "Grass Plant", rect=None, break_time=0.1)
+    GRASS_PLANT = Tile("textures/8.png", "Grass Plant", rect=None, break_time=0.1)
     WOOD = Tile("textures/5.png", "Wood")
-    LEAF = Tile("textures/6.png", "Leaf", break_time=0.2)
+    LEAF = Tile("textures/9.png", "Leaf", break_time=0.2)
     WATER = Water

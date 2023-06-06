@@ -1,0 +1,50 @@
+import pygame as pg
+from settings import TILE_SIZE, WIDTH, HEIGHT
+from event import subscribe, post_event
+class Light:
+    img_cache = {}
+    def __init__(self, radius: float, pos: pg.Vector2, color: tuple[int, int, int]):
+        self.radius = radius
+        self.pos = pos
+        self.color = color
+        post_event("light_added", self)
+    @property
+    def img(self):
+        key = (self.radius, self.color)
+        if img := self.img_cache.get(key, None):
+            pass
+        else:
+            lights = [255]
+            img = pg.Surface((self.radius*2, self.radius*2))
+            for i in range(1, 255):
+                val = lights[i - 1] - i * 0.1
+                if val < 0:
+                    break
+                lights.append(val)
+
+            n = len(lights)
+            for i in range(n):
+                val = (255 - lights[i]) / 255
+                pg.draw.circle(img, (val * self.color[0], val * self.color[1], val * self.color[2]), (self.radius, self.radius), (n - i) / n * self.radius)
+            self.img_cache[key] = img
+        return img
+
+
+
+
+
+class LightManager:
+    def __init__(self) -> None:
+        self.lights: list[Light] = []
+        self.light_surf = pg.Surface((WIDTH, HEIGHT))
+        subscribe("light_added", self.add)
+
+    def add(self, light):
+        self.lights.append(light)
+
+    def draw(self, world: "World"):
+        self.light_surf.fill((3, 3, 3))
+        self.light_surf.fblits(
+            [(l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)) for l in self.lights], pg.BLEND_ADD
+        )
+        world.surf.blit(self.light_surf, (0, 0), special_flags=pg.BLEND_MULT)

@@ -9,7 +9,7 @@ from settings import *
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 print(win)
 from world import World
-from inventory import ItemStack, InventoryUI
+from inventory import ItemStack, InventoryUI, UIBar
 
 
 class State(enum.Enum):
@@ -24,6 +24,8 @@ def main():
 
     inventory = InventoryUI(world.player.inventory.items[: 9 * 4], 9, 4)
     hotbar = InventoryUI(world.player.inventory.items[-9:], 9, 1)
+    uibar = UIBar(world.player.input_component.dash_timer.duration, 0, pg.FRect(10, 0, 100, 20))
+    uibar.rect.bottom = HEIGHT - 10
     hotbar.selected_index = 0
     hotbar.rect.bottom = HEIGHT - 10
     mouse_item_stack = ItemStack()
@@ -62,6 +64,8 @@ def main():
         if state == State.GAME:
             world.update(dt)
             hotbar.draw(win)
+            uibar.draw(win)
+            uibar.value = world.player.input_component.dash_timer.time
 
         if state == State.INVENTORY:
             win.blit(background, (0, 0))
@@ -94,7 +98,7 @@ def main():
             if event.type == pg.MOUSEWHEEL:
                 hotbar.selected_index = (hotbar.selected_index - event.y) % 9
             if state == State.INVENTORY:
-                for ui in [inventory, hotbar]:
+                for ui in [inventory, hotbar, uibar]:
                     ui.handle_event(event, mouse_item_stack)
 
 
