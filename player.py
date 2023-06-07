@@ -10,6 +10,7 @@ from customtypes import Coordinate
 import random
 from event import post_event
 from lights import Light
+from particle import Particle
 if TYPE_CHECKING:
     from world import World
     from inventory import ItemStack
@@ -74,14 +75,15 @@ class PlayerInputComponent(Component):
         self.dash_timer = Timer(1)
         self.can_dash = False
         self.prev_tile_pos = None
-
+        self.last_keys = pg.key.get_pressed()
+        self.shoot_timer = Timer(0.2)
 
     def update(self, game_object: "Player2", world: "World") -> None:
         if not self.can_dash and self.dash_timer.tick(world.dt):
             self.can_dash = True
         self.handle_keys(game_object, world)
         self.handle_mouse(game_object, world)
-
+        
     def handle_keys(self, game_object: "Player2", world: "World"):
         keys = pg.key.get_pressed()
 
@@ -103,6 +105,7 @@ class PlayerInputComponent(Component):
 
         if keys[pg.K_SPACE] and game_object.physics_component.grounded:
             self.jump(game_object)
+
             
         if game_object.physics_component.flying:
             speed_y = 0
@@ -111,6 +114,7 @@ class PlayerInputComponent(Component):
             if keys[pg.K_w]:
                 speed_y -= 3
             game_object.vel.y = speed_y
+        self.last_keys = keys
 
     def dash(self, game_object: "Player2", world: "World", vec: pg.Vector2):
         self.can_dash = False
@@ -127,8 +131,11 @@ class PlayerInputComponent(Component):
 
     def left_click(self, world: "World", game_object: "Player2"):
         tile_pos = world.get_mouse_tile_pos()
+        if self.shoot_timer.tick(world.dt):
+            p = Particle(2, game_object.center, (tile_pos - game_object.center).normalize()*20, 10, (0, 0, 255))
+            world.pm.add([p])
         if game_object.pos.distance_to(tile_pos) > self.reach:
-            return 
+            return
         tile = world.tilemap.get_tile(tile_pos)
 
 
@@ -363,7 +370,7 @@ class SimpleAIComponent(Component):
 class Enemy1(GameObject):
     def __init__(self, x, y, world):
         self.image = pg.Surface((TILE_SIZE - 3, TILE_SIZE - 3))
-        color = (255 * random.random(), 0, 0)
+        color = (random.randint(100, 255), 0, 0)
         self.image.fill(color)
         super().__init__(x, y, *get_img_dimensions(self.image))
         self.input_component = SimpleAIComponent()

@@ -8,6 +8,11 @@ class Light:
         self.pos = pos
         self.color = color
         post_event("light_added", self)
+        self.alive = True
+
+    def kill(self):
+        post_event("light_killed", self)
+
     @property
     def img(self):
         key = (self.radius, self.color)
@@ -32,19 +37,25 @@ class Light:
 
 
 
-
 class LightManager:
     def __init__(self) -> None:
         self.lights: list[Light] = []
         self.light_surf = pg.Surface((WIDTH, HEIGHT))
         subscribe("light_added", self.add)
+        subscribe("light_killed", self.remove)
 
-    def add(self, light):
+    def add(self, light: Light):
         self.lights.append(light)
 
-    def draw(self, world: "World"):
-        self.light_surf.fill((3, 3, 3))
+    def remove(self, light: Light):
+        self.lights.remove(light)    
+
+    def draw(self, world: "World", debug: bool = False):
+        self.light_surf.fill((5, 5, 5))
         self.light_surf.fblits(
             [(l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)) for l in self.lights], pg.BLEND_ADD
         )
-        world.surf.blit(self.light_surf, (0, 0), special_flags=pg.BLEND_MULT)
+        if debug:
+            world.surf.blit(self.light_surf, (0, 0))
+        else:
+            world.surf.blit(self.light_surf, (0, 0), special_flags=pg.BLEND_MULT)

@@ -61,7 +61,7 @@ class World:
         self.pm.add(
             [
                 Particle(
-                    0.5,
+                    0.5+random.uniform(-0.2, 0.2),
                     game_object.center
                     + pg.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.2, 0.2)),
                     (vec + pg.Vector2(0, i / 8 - 2)).normalize() * 10

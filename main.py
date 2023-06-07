@@ -43,6 +43,7 @@ def main():
             lines.append(f"player.break_time={player.input_component.break_timer:.2f}")
             lines.append(f"mouse_tile={world.get_mouse_tile_pos()}")
             lines.append(f"paritcles={len(world.pm.particles)}")
+            lines.append(f"lights={len(world.lm.lights)}")
             
         except Exception as e:
             lines.append(str(e))

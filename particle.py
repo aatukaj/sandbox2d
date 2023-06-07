@@ -1,8 +1,8 @@
 import pygame as pg
-import time
 from typing import TYPE_CHECKING, Dict
 from customtypes import ColorValue
 from settings import TILE_SIZE
+from lights import Light
 
 if TYPE_CHECKING:
     from world import World
@@ -46,16 +46,20 @@ class Particle:
         self.start_size = size
         self.color = color
         self.accel = accel
+        self.light = Light(self.size * 6, self.pos, self.color)
 
     def update(self, world: "World"):
         self.pos += self.vel * world.dt
+        self.light.pos = self.pos
         self.vel += self.accel * world.dt
 
         self.time += world.dt
         if self.time >= self.life_time:
+            self.light.kill()
             return 0
         frac = 1 - self.time/ self.life_time
         self.size = round(self.start_size * frac)
+        self.light.radius = self.size * 6
         return 1
 
     def draw(self):
