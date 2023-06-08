@@ -36,7 +36,7 @@ class Tile(Item):
     def right_click(self, world: "World", game_object: "Player2", item_stack: "ItemStack"):
         tile_pos = tile_pos = world.get_mouse_tile_pos()
         if game_object.pos.distance_to(tile_pos) <= game_object.input_component.reach:
-            if not world.collision_dict.get(tuple(tile_pos)):
+            if not world.cs.collision_dict.get(tuple(tile_pos)):
                 if world.tilemap.set_tile(
                     tile_pos, self, replace=False
                 ):

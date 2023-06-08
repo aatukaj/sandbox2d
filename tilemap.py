@@ -5,7 +5,7 @@ from typing import Union, Optional, TYPE_CHECKING
 from customtypes import Coordinate
 from inspect import isclass
 from tools import Timer
-
+from components.collider import Collider
 if TYPE_CHECKING:
     from world import World
     from player import GameObject
@@ -86,15 +86,16 @@ class Tilemap:
                 ent.update(self)
 
     def get_collisions(self, game_object: "GameObject") -> list[pg.FRect]:
-        # only works when rect dimensions are <= 1
-        points = game_object.get_corner_tile_positions()
+        collider = game_object.components[Collider]
+        points = collider.get_corner_tile_positions()
+        rect = collider.rect
         rects: list[pg.FRect] = []
 
         for point in points:
             tile = self.get_tile(point)
             if tile is not None and tile.rect is not None:
                 tile_rect = tile.rect.move(point)
-                if game_object.rect.colliderect(tile_rect):
+                if rect.colliderect(tile_rect):
                     rects.append(tile_rect)
 
         return rects

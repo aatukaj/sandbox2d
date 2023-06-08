@@ -1,25 +1,37 @@
 import random
 from tilemap import Tilemap
+
 from player import Player2, TileOverlay, Enemy1, GameObject
-import opensimplex
 from settings import *
-from tiles import Tiles, Water
-from typing import Dict, Tuple
+
 from customtypes import Coordinate
 import pygame as pg
-import time
+
 from particle import ParticleManager, Particle
 from event import subscribe
+
 from lights import Light, LightManager
 
+from tools import hexstr2tuple
+
+from world_gen import WorldGenerator
+
+from components.collider import ColliderSystem
+from components.render import RenderSystem
+from components.physics import PhysicsSystem
 class World:
     def __init__(self, surface: pg.Surface):
+        self.cs = ColliderSystem()
+        self.rs = RenderSystem()
+        self.ps = PhysicsSystem()
+
         self.surf = surface
         self.layer0: list[GameObject] = []
         self.tilemap = Tilemap(5000, 500)
         self.player = Player2(
             self.tilemap.width // 2,
             self.tilemap.height // 2 - 5,
+            self
         )
         self.gravity = pg.Vector2(0, 15)
         self.layer0.append(self.player)
@@ -29,9 +41,12 @@ class World:
             self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i)), self))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
-        self.generate_tiles()
+        
+        WorldGenerator(self.tilemap).generate_tiles()
+
         self.debug_on: bool = False
         self.pm = ParticleManager()
+        self.projectiles = []
         
         self.sounds = {}
         self.background = self.generate_background(0.001)
@@ -42,6 +57,8 @@ class World:
         subscribe("player_dash", self.play_sound_fn("jump.wav"))
         subscribe("player_dash", self.dash_particles)
         subscribe("player_grounded", self.play_sound_fn("hitHurt.wav"))
+        subscribe("projectile_explosion", self.play_sound_fn("explosion.wav"))
+        subscribe("projectile_explosion", self.explosion_particles)
 
     def generate_background(self, chance):
         background = pg.Surface(self.surf.get_size(), pg.SRCALPHA)
@@ -51,6 +68,20 @@ class World:
                     pg.draw.rect(background, (255, 255, 255), (x, y, 1, 1))
         return background
 
+    def explosion_particles(self, projectile):
+        pos = projectile.pos
+        self.pm.add(
+            [
+                Particle(
+                    1 + random.uniform(-0.3, 0.5),
+                    pos,
+                    pg.Vector2(random.uniform(-1, 1), random.uniform(-1, 1)).normalize() * 3 * random.uniform(0, 1) - pg.Vector2(0, 3),
+                    5 + random.randint(-2, 2),
+                    [hexstr2tuple("#68386c"), hexstr2tuple("#b55088"), hexstr2tuple("#f6757a")][random.randint(0, 2)],
+                    self.gravity / 1.5
+                )
+                for i in range(80)
+            ])
     def dash_particles(self, data):
         game_object = data["game_object"]
         vec = data["vec"]
@@ -62,7 +93,7 @@ class World:
             [
                 Particle(
                     0.5+random.uniform(-0.2, 0.2),
-                    game_object.center
+                    game_object.pos
                     + pg.Vector2(random.uniform(-0.1, 0.1), random.uniform(-0.2, 0.2)),
                     (vec + pg.Vector2(0, i / 8 - 2)).normalize() * 10
                     + pg.Vector2(
@@ -88,62 +119,11 @@ class World:
 
         return fn
 
-    def generate_tiles(self):
-        start_time = time.time()
-        seed = random.randint(0, 1 << 64)
-        opensimplex.seed(seed)
-        random.seed(seed)
-        base_ground_y = self.tilemap.height // 2
-        last_tree = -1
-        for x in range(self.tilemap.width):
-            ground_y = int(opensimplex.noise2(x / 15, 0) * 8) + base_ground_y
-            stone_offset = int(opensimplex.noise2(x / 20, 2) * 5)
-            self.tilemap.set_tile((x, ground_y), Tiles.GRASS)
-
-            if last_tree + 1 < x and random.random() > 0.95:
-                last_tree = x
-                self.generate_tree(
-                    pg.Vector2(x, ground_y - 1),
-                    bark_length=random.choices([1, 2, 3, 4], weights=(1, 3, 3, 1))[0],
-                )
-            if random.random() > 0.7:
-                self.tilemap.set_tile(
-                    (x, ground_y - 1), Tiles.GRASS_PLANT, replace=False
-                )
-            # for water_y in range(base_ground_y, ground_y - 2, 1):
-            # self.tilemap.set_tile((x, water_y), Tiles.WATER, False)
-
-            for y in range(ground_y + 1, self.tilemap.height):
-                if y < ground_y + 4 + stone_offset:
-                    self.tilemap.set_tile((x, y), Tiles.DIRT)
-                else:
-                    self.tilemap.set_tile((x, y), Tiles.STONE)
-
-            if x % (self.tilemap.width // 100) == 0:
-                print(f"{round(x / self.tilemap.width * 100)}%")
-                pg.display.flip()
-        print(f"100%\nworldgen done, time:{time.time()-start_time:.2f}s")
-
-    def generate_tree(self, pos: Coordinate, bark_length: int = 2) -> None:
-        leaf_t = Tiles.LEAF
-        bark_t = Tiles.WOOD
-        leafs = [
-            [None, leaf_t, leaf_t, leaf_t, None],
-            [leaf_t, leaf_t, leaf_t, leaf_t, leaf_t],
-            [leaf_t, leaf_t, leaf_t, leaf_t, leaf_t],
-        ]
-        bark = [[None, None, bark_t, None, None]] * bark_length
-        tree = leafs + bark
-
-        self.tilemap.set_tiles(
-            (pos - pg.Vector2(2, bark_length + 2)), tree, replace=False
-        )
-
     def draw(self):
-        self.camera.xy = (pg.Vector2(self.player.rect.center)) - pg.Vector2(
+        self.camera.xy = self.player.pos - pg.Vector2(
             WIDTH, HEIGHT
         ) / (2 * TILE_SIZE)
-        self.cam_light.pos = self.player.center
+        self.cam_light.pos = self.player.pos
         self.surf.fill("#10121E")
 
 
@@ -155,35 +135,10 @@ class World:
 
 
         self.tilemap.draw(self.surf, -self.camera)
-        for i in self.layer0:
-            i.draw(self)
+        self.rs.update(self)
         self.pm.draw(self)
         self.lm.draw(self)
 
-    def get_collision_rects(self, rect: pg.FRect):
-        return self.tilemap.get_collisions(rect)
-
-    def get_entity_collisions(self, game_obj: GameObject) -> list[pg.FRect]:
-        collisions: list[pg.FRect] = []
-        for pos in game_obj.get_corner_tile_positions():
-            objs = self.collision_dict.get(pos)
-            if objs:
-                for obj in objs:
-                    if obj != game_obj and obj.rect not in collisions:
-                        if game_obj.rect.colliderect(obj.rect):
-                            collisions.append(obj.rect)
-        return collisions
-
-    def update_collision_dict(self):
-        collision_dict: Dict[Tuple[float, float], list[GameObject]] = {}
-        for obj in self.layer0:
-            if hasattr(obj, "physics_component"):
-                for i in obj.get_corner_tile_positions():
-                    if i in collision_dict:
-                        collision_dict[i].append(obj)
-                    else:
-                        collision_dict[i] = [obj]
-        self.collision_dict = collision_dict
 
     def get_mouse_tile_pos(self):
         mouse_pos = pg.Vector2(pg.mouse.get_pos()) / TILE_SIZE
@@ -194,10 +149,12 @@ class World:
 
     def update(self, dt: float):
         self.dt = dt
-        self.update_collision_dict()
+        self.cs.update()
+        self.ps.update(self)
         self.tilemap.update(self)
 
         self.pm.update(self)
         for i in self.layer0:
             i.update(self)
+        self.projectiles = [projectile for projectile in self.projectiles if projectile.update(self)]
         self.draw()

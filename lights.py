@@ -3,7 +3,7 @@ from settings import TILE_SIZE, WIDTH, HEIGHT
 from event import subscribe, post_event
 class Light:
     img_cache = {}
-    def __init__(self, radius: float, pos: pg.Vector2, color: tuple[int, int, int]):
+    def __init__(self, radius: int, pos: pg.Vector2, color: tuple[int, int, int]):
         self.radius = radius
         self.pos = pos
         self.color = color
@@ -53,7 +53,7 @@ class LightManager:
     def draw(self, world: "World", debug: bool = False):
         self.light_surf.fill((5, 5, 5))
         self.light_surf.fblits(
-            [(l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)) for l in self.lights], pg.BLEND_ADD
+            [(l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)) for l in self.lights], pg.BLEND_MAX
         )
         if debug:
             world.surf.blit(self.light_surf, (0, 0))

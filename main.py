@@ -3,13 +3,13 @@ import pygame as pg
 pg.mixer.init()
 pg.display.init()
 
-
 from settings import *
 
 win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 print(win)
 from world import World
 from inventory import ItemStack, InventoryUI, UIBar
+
 
 
 class State(enum.Enum):
@@ -45,8 +45,8 @@ def main():
             lines.append(f"paritcles={len(world.pm.particles)}")
             lines.append(f"lights={len(world.lm.lights)}")
             
-        except Exception as e:
-            lines.append(str(e))
+        except Exception as ex:
+            lines.append(str(ex))
         bg = pg.Surface((170, 80), pg.SRCALPHA)
         bg.fill((0, 0, 0, 125))
         win.blit(bg, (0, 0))

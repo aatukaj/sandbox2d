@@ -22,8 +22,10 @@ class ParticleManager:
 
     def draw(self, world: "World"):
         world.surf.fblits(
-            [(p.draw(), (p.pos - world.camera) * TILE_SIZE) for p in self.particles]
+            [(p.img, (p.pos - world.camera) * TILE_SIZE) for p in self.particles]
         )
+
+
 
 
 class Particle:
@@ -50,7 +52,7 @@ class Particle:
 
     def update(self, world: "World"):
         self.pos += self.vel * world.dt
-        self.light.pos = self.pos
+        self.light.pos = self.pos + pg.Vector2(self.size/ 2 / TILE_SIZE) 
         self.vel += self.accel * world.dt
 
         self.time += world.dt
@@ -58,11 +60,13 @@ class Particle:
             self.light.kill()
             return 0
         frac = 1 - self.time/ self.life_time
-        self.size = round(self.start_size * frac)
-        self.light.radius = self.size * 6
+        self.size = int(self.start_size * frac +1)
+        self.light.radius = int(self.start_size * frac * 6)
         return 1
 
-    def draw(self):
+
+    @property 
+    def img(self):
         key = (self.size, self.color)
         if img := self.img_cache.get(key, None):
             pass
