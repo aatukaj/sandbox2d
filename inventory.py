@@ -49,10 +49,10 @@ class ItemStack:
         if self.stack_size > 1:
             font.render_to(surf, (x, y), str(self.stack_size), (255, 255, 255))
 
-    def right_click(self, world, game_object):
+    def right_click(self, world, component):
         if self.is_empty:
             return
-        self.item_data.right_click(world, game_object, self)
+        self.item_data.right_click(world, component, self)
 class Inventory:
     def __init__(self, size: int):
         self.size = size

@@ -1,5 +1,6 @@
 import enum
 import pygame as pg
+
 pg.mixer.init()
 pg.display.init()
 
@@ -9,7 +10,7 @@ win = pg.display.set_mode((WIDTH, HEIGHT), FLAGS)
 print(win)
 from world import World
 from inventory import ItemStack, InventoryUI, UIBar
-
+from components.input import PlayerInputComponent
 
 
 class State(enum.Enum):
@@ -24,7 +25,11 @@ def main():
 
     inventory = InventoryUI(world.player.inventory.items[: 9 * 4], 9, 4)
     hotbar = InventoryUI(world.player.inventory.items[-9:], 9, 1)
-    uibar = UIBar(world.player.input_component.dash_timer.duration, 0, pg.FRect(10, 0, 100, 20))
+    uibar = UIBar(
+        world.player.components[PlayerInputComponent].dash_timer.duration,
+        0,
+        pg.FRect(10, 0, 100, 20),
+    )
     uibar.rect.bottom = HEIGHT - 10
     hotbar.selected_index = 0
     hotbar.rect.bottom = HEIGHT - 10
@@ -33,8 +38,9 @@ def main():
 
     debug_on = False
 
-    def debug_draw():             
+    def debug_draw():
         player = world.player
+
         lines = []
         try:
             lines.append(f"fps={clock.get_fps():.0f}, {dt=}")
@@ -44,7 +50,7 @@ def main():
             lines.append(f"mouse_tile={world.get_mouse_tile_pos()}")
             lines.append(f"paritcles={len(world.pm.particles)}")
             lines.append(f"lights={len(world.lm.lights)}")
-            
+
         except Exception as ex:
             lines.append(str(ex))
         bg = pg.Surface((170, 80), pg.SRCALPHA)
@@ -66,7 +72,7 @@ def main():
             world.update(dt)
             hotbar.draw(win)
             uibar.draw(win)
-            uibar.value = world.player.input_component.dash_timer.time
+            uibar.value = world.player.components[PlayerInputComponent].dash_timer.time
 
         if state == State.INVENTORY:
             win.blit(background, (0, 0))

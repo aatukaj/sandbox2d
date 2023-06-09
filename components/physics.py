@@ -7,15 +7,15 @@ import random
 from .collider import Collider
 from event import post_event
 
+
 class PhysicsSystem(System):
     def __init__(self):
         super().__init__()
 
     def update(self, world):
-        for i in self.components:
-            i.update(world)
+        self.components = [i for i in self.components if i.update(world)]
         return super().update()
-    
+
 
 class PhysicsComponent(Component):
     def __init__(self, owner, system: System) -> None:
@@ -65,7 +65,7 @@ class PhysicsComponent(Component):
             center + self.owner.vel * 4,
         )
 
-    def handle_force_target(self, game_object, force, target, dt):
+    def handle_force_target(self, game_object, force, target, dt) -> bool:
         if game_object.vel.x == target.x:
             return
         new_vel = game_object.vel + force * dt
@@ -113,7 +113,9 @@ class PhysicsComponent(Component):
         self.apply_force(self.gravity)
         self.apply_friction(self.owner)
 
-        if entity_collisions := world.cs.get_entity_collisions(self.owner.components[Collider]):
+        if entity_collisions := world.cs.get_entity_collisions(
+            self.owner.components[Collider]
+        ):
             for collision in entity_collisions:
                 self.push_away_from_collision(rect, collision)
 
@@ -159,5 +161,6 @@ class PhysicsComponent(Component):
                 if self.owner.vel.x < 0:
                     self.owner.vel.x = 0
                     rect.left = collision.right
-        
+
         self.owner.pos = pg.Vector2(rect.center)
+        return super().update()

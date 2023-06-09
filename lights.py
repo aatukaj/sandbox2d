@@ -34,9 +34,6 @@ class Light:
             self.img_cache[key] = img
         return img
 
-
-
-
 class LightManager:
     def __init__(self) -> None:
         self.lights: list[Light] = []

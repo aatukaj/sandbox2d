@@ -54,8 +54,8 @@ class Particle:
         self.pos += self.vel * world.dt
         self.light.pos = self.pos + pg.Vector2(self.size/ 2 / TILE_SIZE) 
         self.vel += self.accel * world.dt
-
         self.time += world.dt
+
         if self.time >= self.life_time:
             self.light.kill()
             return 0
