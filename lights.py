@@ -1,17 +1,24 @@
 import pygame as pg
 from settings import TILE_SIZE, WIDTH, HEIGHT
 from event import subscribe, post_event
+from typing import Optional
+
 class Light:
     img_cache = {}
-    def __init__(self, radius: int, pos: pg.Vector2, color: tuple[int, int, int]):
+    def __init__(self, radius: int, pos: pg.Vector2, color: tuple[int, int, int], parent : Optional["GameObject"] = None):
         self.radius = radius
         self.pos = pos
         self.color = color
         post_event("light_added", self)
         self.alive = True
+        self.parent = parent
 
     def kill(self):
         post_event("light_killed", self)
+
+    def update(self, world):
+        if self.parent:
+            self.pos = self.parent.pos
 
     @property
     def img(self):
@@ -49,8 +56,15 @@ class LightManager:
 
     def draw(self, world: "World", debug: bool = False):
         self.light_surf.fill((5, 5, 5))
+        draw_list = []
+
+        for l in self.lights:
+            l.update(world)
+            draw_list.append((l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)))
+
+
         self.light_surf.fblits(
-            [(l.img, (l.pos - world.camera) * TILE_SIZE - pg.Vector2(l.radius)) for l in self.lights], pg.BLEND_MAX
+            draw_list, pg.BLEND_MAX
         )
         if debug:
             world.surf.blit(self.light_surf, (0, 0))

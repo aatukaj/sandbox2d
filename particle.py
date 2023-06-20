@@ -48,11 +48,11 @@ class Particle:
         self.start_size = size
         self.color = color
         self.accel = accel
-        self.light = Light(self.size * 6, self.pos, self.color)
+        self.light = Light(self.size * 6, self.pos, self.color, self)
 
     def update(self, world: "World"):
         self.pos += self.vel * world.dt
-        self.light.pos = self.pos + pg.Vector2(self.size/ 2 / TILE_SIZE) 
+
         self.vel += self.accel * world.dt
         self.time += world.dt
 

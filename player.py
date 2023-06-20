@@ -66,10 +66,9 @@ class Enemy1(GameObject):
         self.add_component(PhysicsComponent(self, world.ps))
         self.add_component(SimpleRenderer(self, world.rs, self.image))
 
-        self.light = Light(50, self.pos, color)
+        self.light = Light(50, self.pos, color, self)
 
     def update(self, world: "World"):
-        self.light.pos = self.pos
         return 0
 
 

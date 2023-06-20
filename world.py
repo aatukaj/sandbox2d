@@ -41,7 +41,7 @@ class World:
         
         self.cam_light = Light(75, self.player.pos, (200, 200, 200))
         
-        for i in range(1):
+        for i in range(10):
             self.layer0.append(Enemy1(*(self.player.pos - pg.Vector2(5, 5 + i)), self))
         self.layer0.append(TileOverlay(0, 0))
         self.camera = pg.Vector2()
@@ -63,6 +63,8 @@ class World:
         subscribe("player_grounded", self.play_sound_fn("hitHurt.wav"))
         subscribe("projectile_explosion", self.play_sound_fn("explosion.wav"))
         subscribe("projectile_explosion", self.explosion_particles)
+
+
 
     def generate_background(self, chance):
         background = pg.Surface(self.surf.get_size(), pg.SRCALPHA)

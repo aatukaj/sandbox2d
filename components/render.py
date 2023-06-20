@@ -12,6 +12,8 @@ class RenderSystem(System):
         return super().update()
 
 
+
+
 class SimpleRenderer(Component):
     def __init__(self, owner, system: System, image: pg.Surface) -> None:
         super().__init__(owner, system)

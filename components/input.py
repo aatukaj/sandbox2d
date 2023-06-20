@@ -76,7 +76,7 @@ class PlayerInputComponent(Component):
         tile_pos = world.get_mouse_tile_pos()
         if self.shoot_timer.tick(world.dt):
             p = Projectile(0, 0, (tile_pos - game_object.pos).normalize() * 20, world)
-            p.pos = game_object.pos
+            p.pos = game_object.pos.copy()
             world.projectiles.append(p)
         if game_object.pos.distance_to(tile_pos) > self.reach:
             return
